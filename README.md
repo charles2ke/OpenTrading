@@ -14,6 +14,7 @@ See the [architecture documentation](docs/architecture.md) for the client, serve
 
 - **Website:** responsive desktop and mobile experience.
 - **Windows:** download the `.exe` installer (or portable `.zip`) for your chip from the latest release — both Intel/AMD `x64` and `arm64` (Snapdragon, Surface Pro) builds are published.
+- **macOS:** download the `.dmg` (or `.zip`) for Apple silicon `arm64` or Intel `x64` from the latest release, or build it yourself on a Mac with `npm run desktop:pack:mac`.
 - **Android:** open the website in Chrome and choose **Install app**.
 - **iOS:** open the website in Safari, choose **Share**, then **Add to Home Screen**.
 
@@ -160,7 +161,7 @@ Unit tests enforce 100% line, branch, and function coverage for trading, banking
 
 ## Deployment
 
-Every merge to `main` builds and publishes the website to GitHub Pages. The `Build Windows desktop app` workflow builds `x64` and `arm64` Windows installers on every push and pull request and uploads them as artifacts; pushing a `v*` tag attaches them to a GitHub release. Successful merged pull requests also update the release status below.
+Every merge to `main` builds and publishes the website to GitHub Pages. The `Build desktop apps` workflow builds `x64` and `arm64` Windows installers and macOS `.dmg`/`.zip` packages on every push and pull request and uploads them as artifacts; pushing a `v*` tag attaches them to a GitHub release. macOS packages are unsigned, so Gatekeeper asks for confirmation on first launch; set the `CSC_LINK` and `CSC_KEY_PASSWORD` secrets and drop `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow to sign them. Successful merged pull requests also update the release status below.
 
 <!-- release-status:start -->
 No pull request has been merged yet.

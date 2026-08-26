@@ -1,4 +1,4 @@
-name: Build Windows desktop app
+name: Build desktop apps
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -42,11 +42,42 @@ jobs:
             release/*.exe
             release/*.zip
             release/*.blockmap
-            release/latest*.yml
+            release/latest.yml
+          if-no-files-found: error
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build
+      - name: Package macOS app (${{ matrix.arch }})
+        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opentrading-macos-${{ matrix.arch }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+            release/latest-mac.yml
           if-no-files-found: error
 
   release:
-    needs: build
+    needs: [windows, macos]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -54,11 +85,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: opentrading-windows-*
+          pattern: opentrading-*
           merge-multiple: true
           path: release
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             release/*.exe
+            release/*.dmg
             release/*.zip

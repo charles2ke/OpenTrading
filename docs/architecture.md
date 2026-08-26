@@ -107,11 +107,11 @@ The Node server and page define a restrictive same-origin Content Security Polic
 
 Vite builds the browser assets into `dist/`. `npm run dev` first builds those assets and then starts the Node server on `127.0.0.1:4173`. GitHub Pages deployment publishes the static build for the PWA; a deployment that needs remote portfolios or sign-in must also run the Node server with MongoDB and the relevant OIDC configuration.
 
-## Windows desktop app
+## Desktop apps
 
 `desktop/main.cjs` is an Electron main process that serves the same `dist/` build over a privileged, secure `app://` scheme so the shipped Content Security Policy still applies. The renderer runs with context isolation, sandboxing, and no Node integration; requests are confined to `dist/`, navigation is restricted to the packaged origin, and external `https:` links open in the system browser.
 
-`electron-builder.yml` packages that shell into NSIS installers and portable ZIP archives for both Windows `x64` and `arm64`. The `Build Windows desktop app` workflow (`.github/workflows/desktop.yml`) runs on `windows-latest`, lints, runs the unit tests, builds the web assets, packages each architecture in a matrix, and uploads the installers as artifacts. Pushing a `v*` tag additionally attaches the installers to a GitHub release.
+`electron-builder.yml` packages that shell into NSIS installers and portable ZIP archives for Windows `x64` and `arm64`, and into `.dmg` disk images and ZIP archives for macOS Intel `x64` and Apple silicon `arm64`. The `Build desktop apps` workflow (`.github/workflows/desktop.yml`) runs matrix jobs on `windows-latest` and `macos-latest` that lint, run the unit tests, build the web assets, package each architecture, and upload the results as artifacts. macOS packages are built unsigned unless signing secrets are configured. Pushing a `v*` tag additionally attaches every package to a GitHub release.
 
 ## Quality boundaries
 
