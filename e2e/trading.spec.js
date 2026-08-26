@@ -63,6 +63,17 @@ test("offers Google and Microsoft authentication", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Continue with Microsoft" })).toBeVisible();
 });
 
+test("shows the beginner's guide on the website", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Learn" })).toHaveAttribute("href", "#learn");
+  await expect(page.getByRole("heading", { name: "Investor concepts for beginners" })).toBeVisible();
+  await expect(page.getByText("A stock represents ownership in a company.")).toBeVisible();
+  const shortSelling = page.locator(".guide-topic").filter({ hasText: "Short selling" });
+  await expect(shortSelling.getByText("theoretically unlimited loss")).toBeHidden();
+  await shortSelling.locator("summary").click();
+  await expect(shortSelling.getByText("theoretically unlimited loss")).toBeVisible();
+});
+
 test("closes the mobile navigation after choosing a section", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
@@ -101,7 +112,9 @@ test("keeps the latest confirmation visible for consecutive orders", async ({ pa
 test("highlights the section being viewed in the sidebar", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".nav-link.active")).toHaveText("⌂Overview");
-  await page.locator("#news").scrollIntoViewIfNeeded();
+  await page.locator("#news").evaluate((section) => {
+    window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY - 100);
+  });
   await expect(page.locator(".nav-link.active")).toHaveText("📰News");
 });
 

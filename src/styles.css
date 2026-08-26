@@ -97,6 +97,18 @@ td { padding: 13px 9px; border-top: 1px solid var(--border); font-size: 11px; }
 .news-source.twitter { color: #7fd4ff; background: #0f3345; }
 .news-source.other { color: #a6b7cb; background: #17273b; }
 .stock-row { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 11px 0; border: 0; border-top: 1px solid var(--border); color: white; background: transparent; text-align: left; cursor: pointer; }
+.guide-panel { margin-top: 16px; }
+.guide-intro, .guide-footer { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.guide-footer { margin: 16px 0 0; }
+.guide-topics { display: grid; gap: 10px; }
+.guide-topic { border: 1px solid var(--border); border-radius: 8px; background: #0e1c2e; }
+.guide-topic > summary { padding: 13px 16px; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; }
+.guide-topic > summary:hover { background: #122138; border-radius: 8px; }
+.guide-topic > *:not(summary) { margin: 0 16px 13px; color: #c3cfdf; font-size: 12px; line-height: 1.65; }
+.guide-topic h3 { margin-top: 16px; color: var(--text); font-size: 12px; }
+.guide-topic ul { padding-left: 18px; }
+.guide-topic li { margin-bottom: 6px; }
+.guide-example { color: var(--muted) !important; }
 .stock-row > span:last-child { text-align: right; }.stock-row:hover { background: #122138; }
 dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid #2a4262; border-radius: 14px; color: white; background: #0d1a2b; box-shadow: 0 30px 80px rgb(0 0 0 / 60%); }
 dialog::backdrop { background: rgb(2 8 16 / 75%); backdrop-filter: blur(5px); }
