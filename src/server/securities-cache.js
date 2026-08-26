@@ -4,6 +4,10 @@ function normalizeIdentifier(value) {
   return typeof value === "string" ? value.trim().toUpperCase() : "";
 }
 
+function normalizeType(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
 export class SecuritiesCache {
   constructor(securities) {
     this.securities = Object.freeze(securities.map((security) => Object.freeze({ ...security })));
@@ -21,7 +25,7 @@ export class SecuritiesCache {
   }
 
   findByIdentifier(type, value) {
-    const normalizedType = normalizeIdentifier(type).toLowerCase();
+    const normalizedType = normalizeType(type);
     if (!IDENTIFIER_KEYS.includes(normalizedType)) return null;
     const normalizedValue = normalizeIdentifier(value);
     if (!normalizedValue) return null;
