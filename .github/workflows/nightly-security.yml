@@ -5,15 +5,13 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-  security-events: write
-
 jobs:
   codeql:
     name: CodeQL analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
@@ -27,6 +25,9 @@ jobs:
   remediate-dependencies:
     name: Audit and remediate dependencies
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
