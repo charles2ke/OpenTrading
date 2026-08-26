@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
+    <meta name="description" content="OpenTrading is a fast, installable paper-trading platform for global markets.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./src/styles.css">
+    <title>OpenTrading — Global markets, one platform</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#" aria-label="OpenTrading home">
+          <span class="brand-mark">O</span><span>OpenTrading</span>
+        </a>
+        <nav>
+          <a class="nav-link active" href="#overview"><span>⌂</span>Overview</a>
+          <a class="nav-link" href="#markets"><span>↗</span>Markets</a>
+          <a class="nav-link" href="#portfolio"><span>◫</span>Portfolio</a>
+          <a class="nav-link" href="#trade"><span>⇄</span>Trade</a>
+        </nav>
+        <div class="secure-card">
+          <span class="secure-icon">◆</span>
+          <div><strong>Paper trading</strong><small>No real money is used</small></div>
+        </div>
+      </aside>
+
+      <main id="main">
+        <header class="topbar">
+          <button class="menu-button" type="button" aria-label="Toggle navigation">☰</button>
+          <div class="search-wrap">
+            <label class="sr-only" for="search">Search markets</label>
+            <span>⌕</span><input id="search" type="search" placeholder="Search stocks or exchanges" autocomplete="off">
+          </div>
+          <div class="market-status"><span></span> Markets simulated live</div>
+          <button id="install" class="secondary-button" type="button" hidden>Install app</button>
+          <div id="auth-root"></div>
+        </header>
+
+        <div class="content">
+          <section class="welcome" id="overview">
+            <div><p class="eyebrow">GLOBAL PAPER TRADING</p><h1>Good morning, Demo</h1><p>Track markets and test your strategy across leading exchanges.</p></div>
+            <button class="primary-button" data-open-trade type="button">+ Place order</button>
+          </section>
+
+          <section class="metrics" aria-label="Portfolio summary">
+            <article class="metric-card">
+              <div class="metric-head"><span>Portfolio value</span><span class="metric-icon blue">◈</span></div>
+              <strong id="portfolio-value">$0.00</strong><small id="portfolio-change" class="positive">+$0.00 today</small>
+            </article>
+            <article class="metric-card">
+              <div class="metric-head"><span>Available cash</span><span class="metric-icon green">$</span></div>
+              <strong id="cash-value">$0.00</strong><small>Ready to invest</small>
+            </article>
+            <article class="metric-card">
+              <div class="metric-head"><span>Open positions</span><span class="metric-icon purple">▦</span></div>
+              <strong id="position-count">0</strong><small>Across global exchanges</small>
+            </article>
+          </section>
+
+          <section class="panel markets-panel" id="markets">
+            <div class="section-head"><div><p class="eyebrow">MARKET PULSE</p><h2>Global markets</h2></div><span class="updated">Updated just now</span></div>
+            <div id="indices" class="indices"></div>
+          </section>
+
+          <div class="dashboard-grid">
+            <section class="panel" id="portfolio">
+              <div class="section-head"><div><p class="eyebrow">YOUR HOLDINGS</p><h2>Portfolio</h2></div><button class="text-button" data-open-trade type="button">Trade stock →</button></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Company</th><th>Exchange</th><th>Shares</th><th>Value</th><th>Return</th></tr></thead>
+                  <tbody id="positions"></tbody>
+                </table>
+                <p id="empty-portfolio" class="empty-state">No positions yet. Place your first paper trade.</p>
+              </div>
+            </section>
+            <section class="panel watchlist-panel">
+              <div class="section-head"><div><p class="eyebrow">WATCHLIST</p><h2>Market movers</h2></div></div>
+              <div id="watchlist"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="trade-dialog" aria-labelledby="trade-title">
+      <form id="trade-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">PAPER ORDER</p><h2 id="trade-title">Place an order</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Close">×</button></div>
+        <label>Stock<select id="symbol" name="symbol"></select></label>
+        <div class="form-row">
+          <label>Side<select id="side" name="side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+          <label>Shares<input id="quantity" name="quantity" type="number" min="1" max="10000" step="1" value="1" required></label>
+        </div>
+        <div class="order-preview"><span>Estimated total</span><strong id="order-total">$0.00</strong></div>
+        <p id="trade-error" class="form-error" role="alert"></p>
+        <button class="primary-button full" value="default" type="submit">Review &amp; place order</button>
+        <small class="disclaimer">Simulation only. Quotes are illustrative and delayed.</small>
+      </form>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/main.jsx"></script>
+  </body>
+</html>
