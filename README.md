@@ -55,6 +55,12 @@ Every image below is captured automatically by `npx playwright test screenshots`
 
 ![Market movers filtered to Tesla by the search field](e2e/screenshots/market-search-desktop.png)
 
+### Loading the news feed
+
+Animated placeholders keep the news panel in place while headlines are being fetched.
+
+![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
+
 ## Development
 
 Requires Node.js 22 or newer.

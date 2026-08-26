@@ -50,6 +50,24 @@ test("shows an unconfigured state for the news feed and fetches news for watched
   await expect(page.getByText("News feed is not configured yet.")).toBeVisible();
 });
 
+test("animates a loading placeholder while news data is fetched", async ({ page }) => {
+  await page.route("**/api/news?*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.fulfill({ status: 503, body: "" });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "TSLA" }).click();
+  await page.getByRole("button", { name: "Review & place order" }).click();
+
+  await expect(page.locator("#news-feed")).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByText("Loading news…")).toBeVisible();
+  await expect(page.locator(".news-skeleton")).toHaveCount(3);
+
+  await expect(page.getByText("News feed is not configured yet.")).toBeVisible();
+  await expect(page.locator(".news-skeleton")).toHaveCount(0);
+  await expect(page.locator("#news-feed")).not.toHaveAttribute("aria-busy", "true");
+});
+
 test("reports when authentication is not configured", async ({ page }) => {
   const session = await page.request.get("/auth/session");
   expect(session.status()).toBe(503);

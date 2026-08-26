@@ -37,5 +37,19 @@ test.describe("documentation screenshots", () => {
 
     await page.getByLabel("Search markets").fill("Tesla");
     await page.screenshot({ path: shot(`market-search-${suffix}`), fullPage: true });
+
+    await page.getByLabel("Search markets").fill("");
+    await page.route("**/api/news?*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await route.fulfill({ status: 503, body: "" });
+    });
+    await page.getByRole("button", { name: "Place order" }).click();
+    await page.getByLabel("Side").selectOption("buy");
+    await page.getByLabel("Stock").selectOption("AAPL");
+    await page.getByLabel("Shares").fill("1");
+    await page.getByRole("button", { name: "Review & place order" }).click();
+    await page.locator(".news-skeleton").first().waitFor();
+    await page.locator("#news").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: shot(`news-loading-${suffix}`) });
   });
 });
