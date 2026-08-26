@@ -42,7 +42,7 @@ function renderMarkets() {
     const change = ((stock.price - stock.previousClose) / stock.previousClose) * 100;
     return `<button class="stock-row" type="button" data-symbol="${stock.symbol}">
       <span class="ticker">${stock.symbol.slice(0, 2)}</span>
-      <span><strong>${stock.symbol}</strong><small>${stock.exchange} · ${stock.country}</small></span>
+      <span><strong>${stock.symbol}</strong><small>${stock.name} · ${stock.exchange}</small></span>
       <span><strong>${currency.format(stock.price)}</strong><small class="${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</small></span>
     </button>`;
   }).join("");
