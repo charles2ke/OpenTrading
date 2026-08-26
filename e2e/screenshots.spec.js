@@ -55,6 +55,24 @@ test.describe("documentation screenshots", () => {
 
     await page.goto("/learn.html");
     await page.screenshot({ path: shot(`beginners-guide-${suffix}`), fullPage: true });
+
+    await page.evaluate(() => navigator.serviceWorker?.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))));
+    await page.route("**/api/audit*", async (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        events: [
+          { occurredAt: "2026-01-05T08:58:11.000Z", action: "auth.login.complete", actor: "actor:4f2c9d", status: "success", metadata: { provider: "google" } },
+          { occurredAt: "2026-01-05T08:59:02.000Z", action: "portfolio.read", actor: "actor:4f2c9d", status: "success", metadata: { found: true } },
+          { occurredAt: "2026-01-05T09:00:41.000Z", action: "portfolio.write", actor: "actor:4f2c9d", status: "success", metadata: { symbols: 3 } },
+          { occurredAt: "2026-01-05T09:02:15.000Z", action: "auth.login.complete", actor: "actor:4f2c9d", status: "failure", metadata: { provider: "microsoft" } }
+        ]
+      })
+    }));
+    await page.goto("/audit.html");
+    await page.locator("#audit-rows tr").first().waitFor();
+    await page.screenshot({ path: shot(`audit-log-${suffix}`), fullPage: true });
   });
 
   test("captures the banking panel and the transfer dialog", async ({ page }) => {

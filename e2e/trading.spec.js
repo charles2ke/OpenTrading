@@ -38,6 +38,40 @@ test("filters market movers", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
 });
 
+test("searches every listed market, index, and identifier", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByLabel("Search markets");
+  await expect(page.getByRole("button", { name: /HSBA/ })).toBeVisible();
+
+  await search.fill("XETRA");
+  await expect(page.getByRole("button", { name: /SAP/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
+  await expect(page.getByText("No indices match your search.")).toBeVisible();
+
+  await search.fill("US0378331005");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /SAP/ })).toBeHidden();
+
+  await search.fill("apple nasdaq");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /MSFT/ })).toBeHidden();
+  await expect(page.getByLabel("Stock")).toHaveValue("AAPL");
+
+  await search.fill("nikkei");
+  await expect(page.getByText("Nikkei 225")).toBeVisible();
+  await expect(page.getByText("S&P 500")).toBeHidden();
+  await expect(page.getByText("No markets match your search.")).toBeVisible();
+});
+
+test("keeps trading available when the search matches nothing", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Search markets").fill("zzzz");
+  await page.getByRole("button", { name: "Place order" }).click();
+  await page.getByLabel("Stock").selectOption("HSBA");
+  await page.getByRole("button", { name: "Review & place order" }).click();
+  await expect(page.locator("#toast")).toHaveText("Bought 1 HSBA");
+});
+
 test("shows an unconfigured state for the news feed and fetches news for watched stocks", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "News feed" })).toBeVisible();
@@ -193,4 +227,60 @@ test("rejects an invalid IBAN and sends a valid ISO 20022 transfer", async ({ pa
   await page.getByRole("button", { name: "Review & send transfer" }).click();
   await expect(page.locator("#toast")).toHaveText("Deposit sent via SEPA");
   await expect(page.locator("#cash-value")).toHaveText("$100,250.50");
+});
+
+test.describe("audit log", () => {
+  test.use({ serviceWorkers: "block" });
+
+  test("shows the audit log page and downloads the events", async ({ page }) => {
+    await page.route("**/api/audit*", async (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        events: [
+          { occurredAt: "2026-01-05T09:00:00.000Z", action: "auth.login.complete", actor: "actor:demo", status: "success", metadata: { provider: "google" } },
+          { occurredAt: "2026-01-06T10:30:00.000Z", action: "portfolio.write", actor: "actor:demo", status: "failure", metadata: { symbols: 2 } }
+        ]
+      })
+    }));
+    await page.goto("/");
+    const audit = page.getByRole("link", { name: "Audit" });
+    const menu = page.getByRole("button", { name: "Toggle navigation" });
+    if (await menu.isVisible()) await menu.click();
+    await audit.click();
+    await expect(page).toHaveURL(/audit\.html$/);
+    await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
+    await expect(page.getByRole("row")).toHaveCount(3);
+    await expect(page.locator("#audit-total")).toHaveText("2");
+    await expect(page.locator("#audit-failures")).toHaveText("1");
+
+    await page.locator("#audit-status-filter").selectOption("failure");
+    await expect(page.getByRole("row")).toHaveCount(2);
+    await expect(page.getByText("portfolio.write")).toBeVisible();
+
+    await page.locator("#audit-status-filter").selectOption("all");
+    await page.locator("#audit-search").fill("google");
+    await expect(page.getByRole("row")).toHaveCount(2);
+
+    const download = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download CSV" }).click()
+    ]).then(([event]) => event);
+    expect(download.suggestedFilename()).toMatch(/^opentrading-audit-.+\.csv$/);
+    await expect(page.locator("#toast")).toHaveText("Downloaded 1 audit event as CSV");
+
+    const jsonDownload = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download JSON" }).click()
+    ]).then(([event]) => event);
+    expect(jsonDownload.suggestedFilename()).toMatch(/^opentrading-audit-.+\.json$/);
+  });
+
+  test("explains when audit history is unavailable", async ({ page }) => {
+    await page.goto("/audit.html");
+    await expect(page.getByText("Audit history is unavailable because the database is not configured.")).toBeVisible();
+    await expect(page.locator("#audit-status")).toHaveText("Audit history unavailable");
+    await page.getByRole("button", { name: "Download CSV" }).click();
+    await expect(page.locator("#toast")).toHaveText("There are no audit events to download.");
+  });
 });

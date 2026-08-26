@@ -133,6 +133,44 @@ test("audit repository caps excessive retention periods", async () => {
   assert.equal(entries[0].expiresAt.toISOString(), new Date("2034-12-30T00:00:00.000Z").toISOString());
 });
 
+test("audit repository lists an actor's own scrubbed events", async () => {
+  const queries = [];
+  const data = collection({
+    find: (query, options) => {
+      queries.push([query, options]);
+      return {
+        toArray: async () => [
+          { action: "portfolio.read", actor: query.actor, status: "success", metadata: { email: "ada@example.com" }, occurredAt: new Date("2026-01-05T09:00:00.000Z") },
+          { action: "auth.logout", actor: query.actor, status: "failure", metadata: null, occurredAt: "2026-01-04T09:00:00.000Z" },
+          { action: "auth.session.read", actor: query.actor, status: "success", metadata: {} }
+        ]
+      };
+    }
+  });
+  const repository = new AuditRepository(data, 30, "audit-key");
+  const events = await repository.listForActor("google:123", 5);
+  assert.match(queries[0][0].actor, /^actor:[a-f0-9]{64}$/);
+  assert.equal(queries[0][1].limit, 5);
+  assert.deepEqual(queries[0][1].sort, { occurredAt: -1 });
+  assert.deepEqual(events[0], {
+    action: "portfolio.read",
+    actor: queries[0][0].actor,
+    status: "success",
+    metadata: { email: "[REDACTED]" },
+    occurredAt: "2026-01-05T09:00:00.000Z"
+  });
+  assert.deepEqual(events[1].metadata, {});
+  assert.equal(events[1].occurredAt, "2026-01-04T09:00:00.000Z");
+  assert.equal(events[2].occurredAt, "");
+  await repository.listForActor("", Number.NaN);
+  assert.equal(queries[1][0].actor, "actor:anonymous");
+  assert.equal(queries[1][1].limit, 200);
+  await repository.listForActor("google:123", 100_000);
+  assert.equal(queries[2][1].limit, 1_000);
+  await repository.listForActor("google:123", 0);
+  assert.equal(queries[3][1].limit, 1);
+});
+
 test("scrubs pii recursively", () => {
   assert.deepEqual(scrubPii({
     email: "ada@example.com",
@@ -232,6 +270,8 @@ test("connectDataStore warns when privacy key is missing outside tests", async (
 test("bank connection repository stores only pseudonymous connection references", async () => {
   const calls = [];
   let listQuery;
+  const longConnectionId = "connection-".padEnd(80, "x");
+  const truncatedLongConnectionId = longConnectionId.slice(0, 64);
   const data = collection({
     createIndex: async (...args) => calls.push(["index", ...args]),
     updateOne: async (...args) => calls.push(["update", ...args]),
@@ -239,18 +279,21 @@ test("bank connection repository stores only pseudonymous connection references"
       listQuery = { query, options };
       return { toArray: async () => [{ connectionId: "conn-1", institutionId: "commerzbank", status: "linked" }] };
     },
-    findOne: async (query) => (query.connectionId === "conn-1" ? { connectionId: "conn-1" } : null)
+    findOne: async (query) => (query.connectionId === "conn-1" || query.connectionId === truncatedLongConnectionId
+      ? { connectionId: query.connectionId }
+      : null)
   });
   const repository = new BankConnectionRepository(data, "privacy-key");
   await repository.initialize();
   await repository.link("owner", { id: "conn-1", institutionId: "commerzbank", status: "linked" });
-  await repository.link("owner", { id: "conn-2", status: "unknown" });
+  await repository.link("owner", { id: longConnectionId, status: "unknown" });
 
   assert.deepEqual(calls[0].slice(1), [{ ownerKey: 1, connectionId: 1 }, { unique: true }]);
   const [, linkedFilter, linkedUpdate] = calls[1];
   assert.match(linkedFilter.ownerKey, /^owner:[a-f0-9]{64}$/);
   assert.equal(linkedFilter.connectionId, "conn-1");
   assert.equal(linkedUpdate.$set.status, "linked");
+  assert.equal(calls[2][1].connectionId, truncatedLongConnectionId);
   assert.equal(calls[2][2].$set.status, "pending");
   assert.equal(calls[2][2].$set.institutionId, "");
 
@@ -258,7 +301,9 @@ test("bank connection repository stores only pseudonymous connection references"
   assert.deepEqual(listQuery.options.projection, { _id: 0, connectionId: 1, institutionId: 1, status: 1 });
   assert.equal(await repository.owns("owner", "conn-1"), true);
   assert.equal(await repository.owns("owner", "conn-9"), false);
+  assert.equal(await repository.owns("owner", longConnectionId), true);
   assert.equal(await repository.unlink("owner", "conn-1"), true);
+  assert.equal(await repository.unlink("owner", longConnectionId), true);
   assert.equal(await new BankConnectionRepository(collection({ deleteOne: async () => ({ deletedCount: 0 }) })).unlink("owner", "conn-1"), false);
 });
 

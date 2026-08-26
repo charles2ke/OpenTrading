@@ -40,6 +40,10 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
+function isJsonContentType(contentType) {
+  return typeof contentType === "string" && contentType.split(";")[0].trim().toLowerCase() === "application/json";
+}
+
 async function auditActivity(auditRepository, event) {
   if (!auditRepository) return;
   try {
@@ -165,6 +169,21 @@ async function handlePortfolioApi(request, response) {
   return sendJson(response, 405, { error: "Method not allowed." });
 }
 
+async function handleAuditApi(request, response, requestUrl) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  const dataStore = await dataStorePromise;
+  if (!dataStore) return sendJson(response, 503, { error: "Audit history is not configured." });
+  const authService = await authServicePromise;
+  const user = await authService.current(request.headers.cookie);
+  if (!user) return sendJson(response, 401, { error: "Sign in to view your audit history." });
+  const limit = Number(requestUrl.searchParams.get("limit") || 200);
+  const events = await dataStore.audit.listForActor(user.id, limit);
+  return sendJson(response, 200, { events });
+}
+
 function handleSecuritiesApi(request, response, pathname) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -214,7 +233,7 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
   }
 
   if (pathname === "/api/banking/connections" && request.method === "POST") {
-    if (request.headers["content-type"] !== "application/json") return sendJson(response, 415, { error: "JSON content is required." });
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
     const { institutionId } = await readJson(request);
     const connection = await bankService.createConnection(institutionId);
     await connections.link(ownerId, connection);
@@ -239,7 +258,7 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
   }
 
   if (pathname === "/api/banking/transfers" && request.method === "POST") {
-    if (request.headers["content-type"] !== "application/json") return sendJson(response, 415, { error: "JSON content is required." });
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
     const { connectionId, transfer } = await readJson(request);
     if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
     const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();
@@ -288,6 +307,13 @@ createServer(async (request, response) => {
       const dataStore = await dataStorePromise;
       await auditActivity(dataStore?.audit, { action: "portfolio.request", actor: "anonymous", status: "failure", metadata: { method: request.method } });
       return sendJson(response, 400, { error: "Invalid request." });
+    }
+  }
+  if (pathname === "/api/audit") {
+    try {
+      return await handleAuditApi(request, response, parsedUrl);
+    } catch {
+      return sendJson(response, 500, { error: "Unable to read audit history right now." });
     }
   }
   if (pathname.startsWith("/api/banking")) {

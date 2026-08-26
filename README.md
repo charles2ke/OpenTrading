@@ -21,12 +21,14 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 ## Features
 
 - Global market overview across US, UK, German, and Japanese exchanges
+- Search every listed market and index by name, ticker, exchange, country, or ISIN/CUSIP/SEDOL identifier
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
 - Connect any bank through Open Banking consent and review masked account details
 - Deposit and withdraw cash with ISO 20022 (SEPA and SWIFT) transfer instructions
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
+- Audit log page to review your recorded account activity and download it as CSV or JSON
 - Restrictive Content Security Policy and no analytics or remote scripts
 
 ## Screenshots
@@ -74,6 +76,12 @@ Animated placeholders keep the news panel in place while headlines are being fet
 
 ![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)
 
+### Audit log
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Audit log page listing recorded account activity with filters and download buttons](e2e/screenshots/audit-log-desktop.png) | ![Audit log page on mobile](e2e/screenshots/audit-log-mobile.png) |
+
 ## Development
 
 Requires Node.js 22 or newer.
@@ -94,7 +102,7 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 ```
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
-MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
+The **Audit** page shows the signed-in user's own audit events and can export the filtered rows as CSV or JSON. MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
 
 ### Authentication
 
