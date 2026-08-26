@@ -239,8 +239,14 @@ test("connects a bank and lists masked account details", async ({ page }) => {
   await expect(page.getByText("EUR 2500.00")).toBeVisible();
 
   await page.getByRole("button", { name: "Connect a bank" }).click();
+  await expect(page.locator("#institution option")).toHaveCount(3);
   await page.locator("#bank-country").selectOption("DE");
   await expect(page.locator("#institution")).toHaveValue("commerzbank");
+  await page.locator("#bank-country").selectOption("IE");
+  await expect(page.locator("#institution")).toHaveValue("bank-of-ireland");
+  await page.locator("#bank-country").selectOption("IN");
+  await expect(page.locator("#institution")).toHaveValue("hdfc-bank");
+  await page.locator("#bank-country").selectOption("DE");
   await page.getByRole("button", { name: "Continue to bank consent" }).click();
   await expect(page.locator("#toast")).toHaveText("Finish the consent at your bank to link the account");
 });

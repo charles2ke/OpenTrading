@@ -8,7 +8,9 @@ const COUNTRIES = Object.freeze([
   { code: "DE", name: "Germany" },
   { code: "FR", name: "France" },
   { code: "ES", name: "Spain" },
+  { code: "IE", name: "Ireland" },
   { code: "NL", name: "Netherlands" },
+  { code: "IN", name: "India" },
   { code: "JP", name: "Japan" },
   { code: "CA", name: "Canada" },
   { code: "AU", name: "Australia" }

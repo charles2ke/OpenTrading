@@ -75,6 +75,8 @@ Animated placeholders keep the news panel in place while headlines are being fet
 | --- | --- |
 | ![Banking panel listing a connected bank account with a masked IBAN and balance](e2e/screenshots/banking-desktop.png) | ![Transfer dialog with direction, currency, amount, IBAN, BIC, and the SEPA settlement scheme](e2e/screenshots/transfer-desktop.png) |
 
+![Connect a bank dialog listing supported countries and the banks available in the selected country](e2e/screenshots/connect-bank-desktop.png)
+
 ### Beginner's guide
 
 ![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)

@@ -92,5 +92,10 @@ test.describe("documentation screenshots", () => {
     await page.locator("#transfer-currency").selectOption("EUR");
     await page.locator("#amount").fill("250.50");
     await page.screenshot({ path: shot(`transfer-${suffix}`) });
+
+    await page.locator("#transfer-dialog").evaluate((dialog) => dialog.close());
+    await page.getByRole("button", { name: "Connect a bank" }).click();
+    await page.locator("#institution option").first().waitFor({ state: "attached" });
+    await page.screenshot({ path: shot(`connect-bank-${suffix}`) });
   });
 });
