@@ -5,7 +5,7 @@ const { pathToFileURL } = require("node:url");
 const startUrl = pathToFileURL(join(__dirname, "..", "dist", "index.html")).href;
 
 function createWindow() {
-  const window = new BrowserWindow({
+  const mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 480,
@@ -20,13 +20,13 @@ function createWindow() {
       webviewTag: false
     }
   });
-  window.once("ready-to-show", () => window.show());
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("https://")) shell.openExternal(url);
+  mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https://")) shell.openExternal(url).catch(() => {});
     return { action: "deny" };
   });
-  window.loadURL(startUrl);
-  return window;
+  mainWindow.loadURL(startUrl);
+  return mainWindow;
 }
 
 app.whenReady().then(() => {
