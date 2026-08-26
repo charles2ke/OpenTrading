@@ -1,6 +1,7 @@
 import { executeOrder, getInstrument, indices, instruments, summarizePortfolio } from "./core/trading.js";
 import { watchedSymbols } from "./core/news.js";
 import { initNavigation } from "./navigation.js";
+import { initBanking } from "./banking-ui.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -20,6 +21,14 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[char]);
+}
+
+function showToast(message) {
+  const toast = byId("toast");
+  toast.textContent = message;
+  toast.classList.add("visible");
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3000);
 }
 
 function greetingFor(date) {
@@ -181,11 +190,7 @@ form.addEventListener("submit", (event) => {
   render();
   loadNews();
   dialog.close();
-  const toast = byId("toast");
-  toast.textContent = `${order.side === "buy" ? "Bought" : "Sold"} ${order.quantity} ${order.symbol}`;
-  toast.classList.add("visible");
-  window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3000);
+  showToast(`${order.side === "buy" ? "Bought" : "Sold"} ${order.quantity} ${order.symbol}`);
 });
 
 byId("search").addEventListener("input", (event) => {
@@ -198,6 +203,16 @@ byId("search").addEventListener("input", (event) => {
 });
 
 initNavigation();
+initBanking({
+  getPortfolio: () => portfolio,
+  showToast,
+  onTransferred: (cash) => {
+    if (!Number.isFinite(cash)) return;
+    portfolio = { ...portfolio, cash };
+    savePortfolio(localStorage, portfolio);
+    render();
+  }
+});
 
 const sections = [...document.querySelectorAll(".nav-link")]
   .filter((link) => link.getAttribute("href").startsWith("#"))

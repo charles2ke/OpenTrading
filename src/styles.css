@@ -92,6 +92,12 @@ td { padding: 13px 9px; border-top: 1px solid var(--border); font-size: 11px; }
 .news-item a { color: var(--text); text-decoration: none; }
 .news-item a:hover { text-decoration: underline; }
 .news-item small { color: var(--muted); font-size: 10px; }
+.section-actions { display: flex; gap: 16px; }
+.banking-status { margin-bottom: 16px; color: var(--muted); font-size: 11px; }
+.bank-accounts { display: grid; gap: 12px; }
+.bank-account { display: flex; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: #0e1c2e; font-size: 12px; }
+.bank-account small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.bank-account-meta { text-align: right; }
 .news-source { justify-self: start; padding: 3px 8px; border-radius: 5px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .news-source.news { color: #75a6ff; background: #152e55; }
 .news-source.twitter { color: #7fd4ff; background: #0f3345; }
