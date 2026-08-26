@@ -65,7 +65,7 @@ function createWindow() {
   });
 
   window.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith(`${APP_ORIGIN}/`)) {
+    if (url !== APP_ORIGIN && !url.startsWith(`${APP_ORIGIN}/`)) {
       event.preventDefault();
       openExternally(url);
     }
