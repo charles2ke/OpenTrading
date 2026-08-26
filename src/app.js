@@ -52,6 +52,7 @@ function safeArticleUrl(url) {
 }
 
 function renderNews(articles, emptyMessage) {
+  byId("news-feed").removeAttribute("aria-busy");
   byId("news-feed").innerHTML = articles.map((article) => `
     <article class="news-item">
       <span class="news-source ${newsSourceClass(article.source)}">${escapeHtml(article.source)}</span>
@@ -63,6 +64,18 @@ function renderNews(articles, emptyMessage) {
   if (emptyMessage) empty.textContent = emptyMessage;
 }
 
+function showNewsLoading() {
+  byId("news-status").textContent = "Loading news…";
+  byId("news-feed").setAttribute("aria-busy", "true");
+  byId("empty-news").hidden = true;
+  byId("news-feed").innerHTML = Array.from({ length: 3 }, () => `
+    <article class="news-item news-skeleton" aria-hidden="true">
+      <span class="skeleton-line short"></span>
+      <span class="skeleton-line"></span>
+      <span class="skeleton-line medium"></span>
+    </article>`).join("");
+}
+
 async function loadNews() {
   const symbols = watchedSymbols(portfolio);
   const requestId = ++newsRequestId;
@@ -72,6 +85,7 @@ async function loadNews() {
     return;
   }
   try {
+    showNewsLoading();
     const query = new URLSearchParams({ symbols: symbols.join(",") });
     const response = await fetch(`./api/news?${query}`, { credentials: "same-origin" });
     if (requestId !== newsRequestId) return;

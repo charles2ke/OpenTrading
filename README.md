@@ -55,6 +55,13 @@ Every image below is captured automatically by `npx playwright test screenshots`
 
 ![Market movers filtered to Tesla by the search field](e2e/screenshots/market-search-desktop.png)
 
+### Loading the news feed
+
+Animated placeholders keep the news panel in place while headlines are being fetched.
+
+![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
+![News feed showing animated shimmer placeholders while data loads on mobile](e2e/screenshots/news-loading-mobile.png)
+
 ### Beginner's guide
 
 ![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)
