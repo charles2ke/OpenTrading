@@ -173,10 +173,15 @@ function openTrade(symbol) {
   if (symbol) symbolSelect.value = symbol;
   byId("trade-error").textContent = "";
   updateOrderTotal();
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
+}
+
+function openTradeFromHash() {
+  if (window.location.hash === "#trade") openTrade();
 }
 
 document.querySelectorAll("[data-open-trade]").forEach((button) => button.addEventListener("click", () => openTrade()));
+window.addEventListener("hashchange", openTradeFromHash);
 byId("watchlist").addEventListener("click", (event) => {
   const row = event.target.closest("[data-symbol]");
   if (row) openTrade(row.dataset.symbol);
@@ -243,6 +248,7 @@ byId("install").addEventListener("click", async () => {
 renderMarkets();
 render();
 loadNews();
+openTradeFromHash();
 loadRemotePortfolio(localStorage, fetch).then((remotePortfolio) => {
   if (!remotePortfolio) return;
   portfolio = remotePortfolio;
