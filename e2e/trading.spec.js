@@ -38,6 +38,40 @@ test("filters market movers", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
 });
 
+test("searches every listed market, index, and identifier", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByLabel("Search markets");
+  await expect(page.getByRole("button", { name: /HSBA/ })).toBeVisible();
+
+  await search.fill("XETRA");
+  await expect(page.getByRole("button", { name: /SAP/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
+  await expect(page.getByText("No indices match your search.")).toBeVisible();
+
+  await search.fill("US0378331005");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /SAP/ })).toBeHidden();
+
+  await search.fill("apple nasdaq");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /MSFT/ })).toBeHidden();
+  await expect(page.getByLabel("Stock")).toHaveValue("AAPL");
+
+  await search.fill("nikkei");
+  await expect(page.getByText("Nikkei 225")).toBeVisible();
+  await expect(page.getByText("S&P 500")).toBeHidden();
+  await expect(page.getByText("No markets match your search.")).toBeVisible();
+});
+
+test("keeps trading available when the search matches nothing", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Search markets").fill("zzzz");
+  await page.getByRole("button", { name: "Place order" }).click();
+  await page.getByLabel("Stock").selectOption("HSBA");
+  await page.getByRole("button", { name: "Review & place order" }).click();
+  await expect(page.getByRole("status")).toHaveText("Bought 1 HSBA");
+});
+
 test("shows an unconfigured state for the news feed and fetches news for watched stocks", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "News feed" })).toBeVisible();
