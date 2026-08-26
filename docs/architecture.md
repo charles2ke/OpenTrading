@@ -19,7 +19,7 @@ flowchart LR
 
 - `index.html` defines the accessible dashboard shell and loads the application entry point.
 - `src/main.jsx` mounts the React authentication controls. The trading dashboard in `src/app.js` uses the DOM directly to render market data, positions, order feedback, and installation controls.
-- `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates, executes, summarizes, and validates the shape of paper portfolios.
+- `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes.
 - `src/core/storage.js` is the persistence adapter. It reads and writes the local portfolio and client identifier, then synchronizes the portfolio with the optional server API.
 - `public/manifest.webmanifest` and `public/service-worker.js` make the site installable. The service worker precaches essential application assets and caches successful same-origin GET responses for offline fallback.
 
