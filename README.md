@@ -25,7 +25,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
-- Connect any bank through Open Banking consent and review masked account details
+- Connect any bank through Open Banking consent and review masked account details on a dedicated Banking page
 - Deposit and withdraw cash with ISO 20022 (SEPA and SWIFT) transfer instructions
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Audit log page to review your recorded account activity and download it as CSV or JSON
@@ -129,10 +129,10 @@ Bank connections use an Open Banking (PSD2/FDX-style) provider. Consent is grant
 ```bash
 OPEN_BANKING_API_URL='https://api.your-provider.com/v1' \
 OPEN_BANKING_API_KEY='...' \
-OPEN_BANKING_REDIRECT_URI='https://your-host/#banking' npm run dev
+OPEN_BANKING_REDIRECT_URI='https://your-host/banking.html' npm run dev
 ```
 
-Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the banking panel explains that the feature is not configured.
+Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured.
 
 ## Quality
 

@@ -10,7 +10,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 test/*.test.js",
     "test:e2e": "playwright test",
-    "lint": "node --check src/app.js && node --check src/banking-ui.js && node --check src/core/trading.js && node --check src/core/audit.js && node --check src/audit.js && node --check src/core/news.js && node --check src/core/banking.js && node --check src/server/news-service.js && node --check src/server/bank-service.js && node --check scripts/server.js"
+    "lint": "node --check src/app.js && node --check src/banking.js && node --check src/banking-ui.js && node --check src/core/trading.js && node --check src/core/audit.js && node --check src/audit.js && node --check src/core/news.js && node --check src/core/banking.js && node --check src/server/news-service.js && node --check src/server/bank-service.js && node --check scripts/server.js"
   },
   "repository": {
     "type": "git",

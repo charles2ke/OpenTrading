@@ -24,7 +24,8 @@ flowchart LR
 - `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes.
 - `audit.html` and `src/audit.js` render the audit log page. It loads the signed-in user's pseudonymized audit events, filters them by text and status, and exports the filtered rows to CSV or JSON with `src/core/audit.js`.
 - `src/core/banking.js` is the banking domain layer. It validates IBANs with the ISO 13616 mod-97 checksum, validates ISO 9362 BIC codes, masks account identifiers, decides between the SEPA and SWIFT settlement schemes, and builds ISO 20022 `pain.001` payment instructions.
-- `src/banking-ui.js` renders the banking panel, the bank consent dialog, and the transfer dialog, and talks to the `/api/banking/*` endpoints.
+- `banking.html` and `src/banking.js` render the banking page, which shows the available cash balance and reuses `src/banking-ui.js`.
+- `src/banking-ui.js` renders the bank connections panel, the bank consent dialog, and the transfer dialog, and talks to the `/api/banking/*` endpoints.
 - `src/core/storage.js` is the persistence adapter. It reads and writes the local portfolio and client identifier, then synchronizes the portfolio with the optional server API.
 - `public/manifest.webmanifest` and `public/service-worker.js` make the site installable. The service worker precaches essential application assets and caches successful same-origin GET responses for offline fallback.
 

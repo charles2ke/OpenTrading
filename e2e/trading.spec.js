@@ -190,7 +190,7 @@ test("returns to the dashboard from the beginner's guide", async ({ page }) => {
 });
 
 test("explains when bank connections are not configured", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/banking.html");
   await expect(page.getByRole("heading", { name: "Banking" })).toBeVisible();
   await expect(page.getByText("Bank connections are not configured on this deployment.")).toBeVisible();
   await expect(page.getByText("No bank connected yet.")).toBeVisible();
@@ -198,7 +198,7 @@ test("explains when bank connections are not configured", async ({ page }) => {
 
 test("connects a bank and lists masked account details", async ({ page }) => {
   await stubBanking(page);
-  await page.goto("/");
+  await page.goto("/banking.html");
   await expect(page.getByText("1 bank connection · consent managed by your bank")).toBeVisible();
   await expect(page.getByText("DE••••3000")).toBeVisible();
   await expect(page.getByText("EUR 2500.00")).toBeVisible();
@@ -212,7 +212,7 @@ test("connects a bank and lists masked account details", async ({ page }) => {
 
 test("rejects an invalid IBAN and sends a valid ISO 20022 transfer", async ({ page }) => {
   await stubBanking(page);
-  await page.goto("/");
+  await page.goto("/banking.html");
   await page.getByRole("button", { name: "Transfer money" }).click();
   await page.locator("#account-name").fill("Ada Lovelace");
   await page.locator("#iban").fill("DE00 0000");
