@@ -28,7 +28,7 @@ export function getClientId(storage, randomUUID) {
 export async function loadRemotePortfolio(storage, request, randomUUID = crypto.randomUUID.bind(crypto)) {
   const response = await request("./api/portfolio", {
     headers: { "X-Client-ID": getClientId(storage, randomUUID) },
-    credentials: "omit"
+    credentials: "same-origin"
   });
   if (response.status === 404 || response.status === 503) return null;
   if (!response.ok) throw new Error("Unable to load the remote portfolio.");
@@ -45,7 +45,7 @@ export async function saveRemotePortfolio(storage, portfolio, request, randomUUI
       "Content-Type": "application/json",
       "X-Client-ID": getClientId(storage, randomUUID)
     },
-    credentials: "omit",
+    credentials: "same-origin",
     body: JSON.stringify(portfolio)
   });
   if (response.status === 503) return false;

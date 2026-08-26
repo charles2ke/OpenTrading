@@ -35,3 +35,10 @@ test("filters market movers", async ({ page }) => {
   await expect(page.getByRole("button", { name: /TSLA/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
 });
+
+test("offers Google and Microsoft authentication", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue with Microsoft" })).toBeVisible();
+});

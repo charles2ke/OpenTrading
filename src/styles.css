@@ -40,6 +40,11 @@ main { margin-left: 232px; }
 .market-status { margin-left: auto; color: var(--muted); font-size: 12px; }
 .market-status span { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #233758; font-size: 12px; font-weight: 700; }
+.signed-in { display: flex; align-items: center; gap: 8px; }
+.auth-menu { position: relative; }
+.auth-options { position: absolute; top: calc(100% + 8px); right: 0; width: 210px; display: grid; gap: 5px; padding: 8px; border: 1px solid var(--border); border-radius: 9px; background: #101f32; box-shadow: 0 15px 35px rgb(0 0 0 / 35%); }
+.auth-options a { padding: 10px 12px; border-radius: 6px; color: white; font-size: 12px; text-decoration: none; }
+.auth-options a:hover { background: #1b304d; }
 .content { max-width: 1440px; margin: auto; padding: 38px 42px 64px; }
 .welcome { display: flex; justify-content: space-between; align-items: end; margin-bottom: 30px; }
 h1, h2, p { margin-top: 0; }

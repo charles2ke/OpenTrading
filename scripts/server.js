@@ -3,15 +3,22 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { isPortfolio } from "../src/core/trading.js";
-import { connectPortfolioRepository } from "../src/server/portfolio-repository.js";
+import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
+import { connectDataStore } from "../src/server/portfolio-repository.js";
 
 const root = process.env.SERVE_DIR || process.cwd();
 const port = Number(process.env.PORT || 4173);
 const types = { ".css": "text/css; charset=utf-8", ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json" };
 const mongoUri = process.env.MONGODB_URI;
-const repositoryPromise = mongoUri
-  ? connectPortfolioRepository(mongoUri, process.env.MONGODB_DATABASE)
+const dataStorePromise = mongoUri
+  ? connectDataStore(mongoUri, process.env.MONGODB_DATABASE).catch((error) => {
+      console.error("MongoDB connection failed:", error.message);
+      return null;
+    })
   : Promise.resolve(null);
+const authServicePromise = dataStorePromise.then((dataStore) => dataStore
+  ? new AuthService(dataStore.auth, process.env.APP_BASE_URL || `http://127.0.0.1:${port}`, providerSettings(process.env))
+  : null);
 const clientIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const securityHeaders = {
   "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
@@ -38,20 +45,49 @@ async function readJson(request) {
 }
 
 async function handlePortfolioApi(request, response) {
-  const clientId = request.headers["x-client-id"];
-  if (typeof clientId !== "string" || !clientIdPattern.test(clientId)) return sendJson(response, 400, { error: "Invalid client ID." });
-  const repository = await repositoryPromise;
-  if (!repository) return sendJson(response, 503, { error: "MongoDB is not configured." });
+  const dataStore = await dataStorePromise;
+  if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
+  const authService = await authServicePromise;
+  const user = await authService.current(request.headers.cookie);
+  const anonymousId = request.headers["x-client-id"];
+  if (!user && (typeof anonymousId !== "string" || !clientIdPattern.test(anonymousId))) return sendJson(response, 400, { error: "Invalid client ID." });
+  const ownerId = user?.id ?? `anonymous:${anonymousId}`;
+  const repository = dataStore.portfolio;
   if (request.method === "GET") {
-    const portfolio = await repository.find(clientId);
+    const portfolio = await repository.find(ownerId);
     return sendJson(response, portfolio ? 200 : 404, portfolio ?? { error: "Portfolio not found." });
   }
   if (request.method === "PUT") {
     if (request.headers["content-type"] !== "application/json") return sendJson(response, 415, { error: "JSON content is required." });
     const portfolio = await readJson(request);
     if (!isPortfolio(portfolio)) return sendJson(response, 422, { error: "Invalid portfolio." });
-    await repository.save(clientId, portfolio);
+    await repository.save(ownerId, portfolio);
     return sendJson(response, 204, null);
+  }
+
+  async function handleAuth(request, response, pathname, requestUrl) {
+    const authService = await authServicePromise;
+    if (!authService) return sendJson(response, 503, { error: "Authentication is unavailable." });
+    if (pathname === "/auth/session" && request.method === "GET") {
+      const user = await authService.current(request.headers.cookie);
+      return sendJson(response, user ? 200 : 401, user ?? { error: "Not signed in." });
+    }
+    if (pathname === "/auth/logout" && request.method === "POST") {
+      await authService.logout(request.headers.cookie);
+      response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie("", 0), Location: "./" });
+      return response.end();
+    }
+    const match = pathname.match(/^\/auth\/(google|microsoft)(\/callback)?$/);
+    if (!match || request.method !== "GET") return sendJson(response, 404, { error: "Authentication route not found." });
+    const [, provider, callback] = match;
+    if (!callback) {
+      const redirect = await authService.begin(provider);
+      response.writeHead(302, { ...securityHeaders, Location: redirect.href, "Cache-Control": "no-store" });
+      return response.end();
+    }
+    const result = await authService.complete(provider, requestUrl);
+    response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie(result.sessionId), Location: "../../" });
+    return response.end();
   }
   response.setHeader("Allow", "GET, PUT");
   return sendJson(response, 405, { error: "Method not allowed." });
@@ -60,7 +96,15 @@ async function handlePortfolioApi(request, response) {
 createServer(async (request, response) => {
   let pathname;
   try {
-    pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
+    const parsedUrl = new URL(request.url, process.env.APP_BASE_URL || `http://127.0.0.1:${port}`);
+    pathname = decodeURIComponent(parsedUrl.pathname);
+    if (pathname.startsWith("/auth/")) {
+      try {
+        return await handleAuth(request, response, pathname, parsedUrl);
+      } catch {
+        return sendJson(response, 400, { error: "Authentication failed." });
+      }
+    }
   } catch {
     return sendJson(response, 400, { error: "Invalid URL." });
   }

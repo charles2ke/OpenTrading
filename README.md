@@ -41,6 +41,24 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
 
+### Authentication
+
+Google and Microsoft login use OpenID Connect Authorization Code Flow with PKCE. Identity credentials and sessions remain server-side in MongoDB. Register these callback URLs with each provider:
+
+- `https://your-host/auth/google/callback`
+- `https://your-host/auth/microsoft/callback`
+
+Then configure:
+
+```bash
+APP_BASE_URL='https://your-host' \
+GOOGLE_CLIENT_ID='...' GOOGLE_CLIENT_SECRET='...' \
+MICROSOFT_CLIENT_ID='...' MICROSOFT_CLIENT_SECRET='...' \
+MONGODB_URI='...' npm run dev
+```
+
+Optionally set `MICROSOFT_TENANT_ID`; it defaults to `common`.
+
 ## Quality
 
 ```bash
@@ -51,7 +69,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Unit tests enforce 100% line, branch, and function coverage for the trading and persistence core. Playwright exercises desktop, Android, and iOS viewport experiences and captures screenshots.
+Unit tests enforce 100% line, branch, and function coverage for trading, persistence, MongoDB repositories, and authentication. Playwright exercises desktop, Android, and iOS experiences and captures screenshots. Each pull request receives a comment linking to its screenshot artifact.
 
 ## Deployment
 
