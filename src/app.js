@@ -1,17 +1,88 @@
 import { executeOrder, getInstrument, indices, instruments, summarizePortfolio } from "./core/trading.js";
+import { watchedSymbols } from "./core/news.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+const relativeTime = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
 let portfolio = loadPortfolio(localStorage);
 let installPrompt;
+let newsRequestId = 0;
 
 const byId = (id) => document.getElementById(id);
 const dialog = byId("trade-dialog");
 const form = byId("trade-form");
 const symbolSelect = byId("symbol");
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function formatRelativeTime(isoDate) {
+  const minutes = Math.round((Date.parse(isoDate) - Date.now()) / 60_000);
+  if (Math.abs(minutes) < 60) return relativeTime.format(minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return relativeTime.format(hours, "hour");
+  return relativeTime.format(Math.round(hours / 24), "day");
+}
+
+const KNOWN_NEWS_SOURCES = new Set(["news", "twitter"]);
+
+function newsSourceClass(source) {
+  return KNOWN_NEWS_SOURCES.has(source) ? source : "other";
+}
+
+function safeArticleUrl(url) {
+  try {
+    return ["http:", "https:"].includes(new URL(url).protocol) ? url : "";
+  } catch {
+    return "";
+  }
+}
+
+function renderNews(articles, emptyMessage) {
+  byId("news-feed").innerHTML = articles.map((article) => `
+    <article class="news-item">
+      <span class="news-source ${newsSourceClass(article.source)}">${escapeHtml(article.source)}</span>
+      <a href="${escapeHtml(safeArticleUrl(article.url))}" target="_blank" rel="noopener noreferrer"><strong>${escapeHtml(article.title)}</strong></a>
+      <small>${escapeHtml(article.symbol)} · ${escapeHtml(formatRelativeTime(article.publishedAt))}${article.author ? ` · ${escapeHtml(article.author)}` : ""}</small>
+    </article>`).join("");
+  const empty = byId("empty-news");
+  empty.hidden = articles.length > 0;
+  if (emptyMessage) empty.textContent = emptyMessage;
+}
+
+async function loadNews() {
+  const symbols = watchedSymbols(portfolio);
+  const requestId = ++newsRequestId;
+  if (symbols.length === 0) {
+    byId("news-status").textContent = "Updated just now";
+    renderNews([], "No news yet. Buy a stock to follow its headlines and posts.");
+    return;
+  }
+  try {
+    const query = new URLSearchParams({ symbols: symbols.join(",") });
+    const response = await fetch(`./api/news?${query}`, { credentials: "same-origin" });
+    if (requestId !== newsRequestId) return;
+    if (!response.ok) {
+      byId("news-status").textContent = "News feed unavailable";
+      renderNews([], "News feed is not configured yet. Add API keys to see headlines and posts.");
+      return;
+    }
+    const { articles } = await response.json();
+    byId("news-status").textContent = "Updated just now";
+    renderNews(Array.isArray(articles) ? articles : [], "No recent news for your watched stocks.");
+  } catch {
+    if (requestId !== newsRequestId) return;
+    byId("news-status").textContent = "News feed unavailable";
+    renderNews([], "News feed is not configured yet. Add API keys to see headlines and posts.");
+  }
+}
+
 function render() {
+
   const summary = summarizePortfolio(portfolio);
   byId("portfolio-value").textContent = currency.format(summary.portfolioValue);
   byId("cash-value").textContent = currency.format(summary.cash);
@@ -85,6 +156,7 @@ form.addEventListener("submit", (event) => {
   savePortfolio(localStorage, portfolio);
   saveRemotePortfolio(localStorage, portfolio, fetch).catch(() => {});
   render();
+  loadNews();
   dialog.close();
   const toast = byId("toast");
   toast.textContent = `${order.side === "buy" ? "Bought" : "Sold"} ${order.quantity} ${order.symbol}`;
@@ -113,11 +185,13 @@ byId("install").addEventListener("click", async () => {
 
 renderMarkets();
 render();
+loadNews();
 loadRemotePortfolio(localStorage, fetch).then((remotePortfolio) => {
   if (!remotePortfolio) return;
   portfolio = remotePortfolio;
   savePortfolio(localStorage, portfolio);
   render();
+  loadNews();
 }).catch(() => {});
 
 if ("serviceWorker" in navigator) {

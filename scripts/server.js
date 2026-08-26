@@ -2,8 +2,9 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
-import { instruments, isPortfolio } from "../src/core/trading.js";
+import { getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
+import { createNewsService } from "../src/server/news-service.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
 import { createSecuritiesCache } from "../src/server/securities-cache.js";
 
@@ -29,6 +30,7 @@ const securityHeaders = {
   "X-Frame-Options": "DENY"
 };
 const securitiesCache = createSecuritiesCache(instruments);
+const newsService = createNewsService(process.env);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -108,6 +110,23 @@ function handleSecuritiesApi(request, response, pathname) {
   return sendJson(response, security ? 200 : 404, security ?? { error: "Security not found." });
 }
 
+function handleNewsApi(request, response, requestUrl) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  if (!newsService.isConfigured()) return sendJson(response, 503, { error: "News feed is not configured." });
+  const symbols = [...new Set((requestUrl.searchParams.get("symbols") || "").split(",")
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean))].slice(0, 20);
+  if (symbols.length === 0) return sendJson(response, 200, { articles: [] });
+  const unknown = symbols.filter((symbol) => !getInstrument(symbol));
+  if (unknown.length > 0) return sendJson(response, 404, { error: `Unknown symbol(s): ${unknown.join(", ")}` });
+  return newsService.forSymbols(symbols, (symbol) => getInstrument(symbol)?.name || "")
+    .then((articles) => sendJson(response, 200, { articles }))
+    .catch(() => sendJson(response, 502, { error: "Unable to fetch news right now." }));
+}
+
 createServer(async (request, response) => {
   let parsedUrl;
   let pathname;
@@ -132,6 +151,7 @@ createServer(async (request, response) => {
     }
   }
   if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);
+  if (pathname === "/api/news") return handleNewsApi(request, response, parsedUrl);
   const relative = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, "").replace(/^[/\\]+/, "");
   let file = join(root, relative || "index.html");
   try {
