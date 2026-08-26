@@ -133,6 +133,44 @@ test("audit repository caps excessive retention periods", async () => {
   assert.equal(entries[0].expiresAt.toISOString(), new Date("2034-12-30T00:00:00.000Z").toISOString());
 });
 
+test("audit repository lists an actor's own scrubbed events", async () => {
+  const queries = [];
+  const data = collection({
+    find: (query, options) => {
+      queries.push([query, options]);
+      return {
+        toArray: async () => [
+          { action: "portfolio.read", actor: query.actor, status: "success", metadata: { email: "ada@example.com" }, occurredAt: new Date("2026-01-05T09:00:00.000Z") },
+          { action: "auth.logout", actor: query.actor, status: "failure", metadata: null, occurredAt: "2026-01-04T09:00:00.000Z" },
+          { action: "auth.session.read", actor: query.actor, status: "success", metadata: {} }
+        ]
+      };
+    }
+  });
+  const repository = new AuditRepository(data, 30, "audit-key");
+  const events = await repository.listForActor("google:123", 5);
+  assert.match(queries[0][0].actor, /^actor:[a-f0-9]{64}$/);
+  assert.equal(queries[0][1].limit, 5);
+  assert.deepEqual(queries[0][1].sort, { occurredAt: -1 });
+  assert.deepEqual(events[0], {
+    action: "portfolio.read",
+    actor: queries[0][0].actor,
+    status: "success",
+    metadata: { email: "[REDACTED]" },
+    occurredAt: "2026-01-05T09:00:00.000Z"
+  });
+  assert.deepEqual(events[1].metadata, {});
+  assert.equal(events[1].occurredAt, "2026-01-04T09:00:00.000Z");
+  assert.equal(events[2].occurredAt, "");
+  await repository.listForActor("", Number.NaN);
+  assert.equal(queries[1][0].actor, "actor:anonymous");
+  assert.equal(queries[1][1].limit, 200);
+  await repository.listForActor("google:123", 100_000);
+  assert.equal(queries[2][1].limit, 1_000);
+  await repository.listForActor("google:123", 0);
+  assert.equal(queries[3][1].limit, 1);
+});
+
 test("scrubs pii recursively", () => {
   assert.deepEqual(scrubPii({
     email: "ada@example.com",
