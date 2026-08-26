@@ -153,3 +153,59 @@ test("returns to the dashboard from the beginner's guide", async ({ page }) => {
   await page.getByRole("link", { name: "Back to dashboard" }).click();
   await expect(page.getByRole("heading", { name: /^Good (morning|afternoon|evening), Demo$/ })).toBeVisible();
 });
+
+test.describe("audit log", () => {
+  test.use({ serviceWorkers: "block" });
+
+  test("shows the audit log page and downloads the events", async ({ page }) => {
+    await page.route("**/api/audit*", async (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        events: [
+          { occurredAt: "2026-01-05T09:00:00.000Z", action: "auth.login.complete", actor: "actor:demo", status: "success", metadata: { provider: "google" } },
+          { occurredAt: "2026-01-06T10:30:00.000Z", action: "portfolio.write", actor: "actor:demo", status: "failure", metadata: { symbols: 2 } }
+        ]
+      })
+    }));
+    await page.goto("/");
+    const audit = page.getByRole("link", { name: "Audit" });
+    const menu = page.getByRole("button", { name: "Toggle navigation" });
+    if (await menu.isVisible()) await menu.click();
+    await audit.click();
+    await expect(page).toHaveURL(/audit\.html$/);
+    await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
+    await expect(page.getByRole("row")).toHaveCount(3);
+    await expect(page.locator("#audit-total")).toHaveText("2");
+    await expect(page.locator("#audit-failures")).toHaveText("1");
+
+    await page.locator("#audit-status-filter").selectOption("failure");
+    await expect(page.getByRole("row")).toHaveCount(2);
+    await expect(page.getByText("portfolio.write")).toBeVisible();
+
+    await page.locator("#audit-status-filter").selectOption("all");
+    await page.locator("#audit-search").fill("google");
+    await expect(page.getByRole("row")).toHaveCount(2);
+
+    const download = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download CSV" }).click()
+    ]).then(([event]) => event);
+    expect(download.suggestedFilename()).toMatch(/^opentrading-audit-.+\.csv$/);
+    await expect(page.locator("#toast")).toHaveText("Downloaded 1 audit event as CSV");
+
+    const jsonDownload = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download JSON" }).click()
+    ]).then(([event]) => event);
+    expect(jsonDownload.suggestedFilename()).toMatch(/^opentrading-audit-.+\.json$/);
+  });
+
+  test("explains when audit history is unavailable", async ({ page }) => {
+    await page.goto("/audit.html");
+    await expect(page.getByText("Audit history is unavailable because the database is not configured.")).toBeVisible();
+    await expect(page.locator("#audit-status")).toHaveText("Audit history unavailable");
+    await page.getByRole("button", { name: "Download CSV" }).click();
+    await expect(page.locator("#toast")).toHaveText("There are no audit events to download.");
+  });
+});

@@ -157,6 +157,21 @@ async function handlePortfolioApi(request, response) {
   return sendJson(response, 405, { error: "Method not allowed." });
 }
 
+async function handleAuditApi(request, response, requestUrl) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  const dataStore = await dataStorePromise;
+  if (!dataStore) return sendJson(response, 503, { error: "Audit history is not configured." });
+  const authService = await authServicePromise;
+  const user = await authService.current(request.headers.cookie);
+  if (!user) return sendJson(response, 401, { error: "Sign in to view your audit history." });
+  const limit = Number(requestUrl.searchParams.get("limit") || 200);
+  const events = await dataStore.audit.listForActor(user.id, limit);
+  return sendJson(response, 200, { events });
+}
+
 function handleSecuritiesApi(request, response, pathname) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -211,6 +226,13 @@ createServer(async (request, response) => {
     } catch {
       const dataStore = await dataStorePromise;
       await auditActivity(dataStore?.audit, { action: "portfolio.request", actor: "anonymous", status: "failure", metadata: { method: request.method } });
+      return sendJson(response, 400, { error: "Invalid request." });
+    }
+  }
+  if (pathname === "/api/audit") {
+    try {
+      return await handleAuditApi(request, response, parsedUrl);
+    } catch {
       return sendJson(response, 400, { error: "Invalid request." });
     }
   }

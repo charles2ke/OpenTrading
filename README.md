@@ -25,6 +25,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
+- Audit log page to review your recorded account activity and download it as CSV or JSON
 - Restrictive Content Security Policy and no analytics or remote scripts
 
 ## Screenshots
@@ -66,6 +67,12 @@ Animated placeholders keep the news panel in place while headlines are being fet
 
 ![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)
 
+### Audit log
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Audit log page listing recorded account activity with filters and download buttons](e2e/screenshots/audit-log-desktop.png) | ![Audit log page on mobile](e2e/screenshots/audit-log-mobile.png) |
+
 ## Development
 
 Requires Node.js 22 or newer.
@@ -86,7 +93,7 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 ```
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
-MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
+The **Audit** page shows the signed-in user's own audit events and can export the filtered rows as CSV or JSON. MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
 
 ### Authentication
 
