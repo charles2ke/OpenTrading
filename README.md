@@ -171,4 +171,8 @@ Latest merged pull request: #20
 
 Please report vulnerabilities privately through GitHub Security Advisories. Never include credentials or real financial information in issues.
 
+## Privacy and terms
+
+Read the [Privacy Policy](PRIVACY.md) for details on what data OpenTrading processes, where it is stored, and how long it is retained, and the [Terms of Service](TERMS.md) for the rules governing use of the Service.
+
 Licensed under the [Apache License 2.0](LICENSE).
