@@ -6,6 +6,8 @@ import {
   executeOrder,
   getInstrument,
   isPortfolio,
+  searchIndices,
+  searchInstruments,
   summarizePortfolio,
   validateOrder
 } from "../src/core/trading.js";
@@ -90,4 +92,25 @@ test("recognizes only structurally valid portfolios", () => {
   assert.equal(isPortfolio({ cash: 1, positions: { AAPL: { quantity: 0, averagePrice: 1 } } }), false);
   assert.equal(isPortfolio({ cash: 1, positions: { AAPL: { quantity: 1, averagePrice: "1" } } }), false);
   assert.equal(isPortfolio({ cash: 1, positions: { AAPL: { quantity: 1, averagePrice: 0 } } }), false);
+});
+
+test("searches instruments across names, exchanges, and identifiers", () => {
+  assert.deepEqual(searchInstruments("").length, 6);
+  assert.deepEqual(searchInstruments("   ").length, 6);
+  assert.deepEqual(searchInstruments(undefined).length, 6);
+  assert.deepEqual(searchInstruments("hsbc").map((instrument) => instrument.symbol), ["HSBA"]);
+  assert.deepEqual(searchInstruments("XETRA").map((instrument) => instrument.symbol), ["SAP"]);
+  assert.deepEqual(searchInstruments("US88160R1014").map((instrument) => instrument.symbol), ["TSLA"]);
+  assert.deepEqual(searchInstruments("594918104").map((instrument) => instrument.symbol), ["MSFT"]);
+  assert.deepEqual(searchInstruments("2046251").map((instrument) => instrument.symbol), ["AAPL"]);
+  assert.deepEqual(searchInstruments("apple nasdaq").map((instrument) => instrument.symbol), ["AAPL"]);
+  assert.deepEqual(searchInstruments("apple lse"), []);
+  assert.deepEqual(searchInstruments("zzzz"), []);
+});
+
+test("searches indices by name and code", () => {
+  assert.deepEqual(searchIndices("nikkei").map((index) => index.code), ["NKY"]);
+  assert.deepEqual(searchIndices("ukx").map((index) => index.name), ["FTSE 100"]);
+  assert.deepEqual(searchIndices("").length, 4);
+  assert.deepEqual(searchIndices("zzzz"), []);
 });

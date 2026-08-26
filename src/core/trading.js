@@ -16,6 +16,28 @@ export const indices = Object.freeze([
   { name: "DAX", code: "DAX", flag: "🇩🇪", value: 24309.62, change: 0.58 }
 ]);
 
+function searchTerms(query) {
+  return String(query ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+function matchesTerms(fields, terms) {
+  const haystack = fields.join(" ").toLowerCase();
+  return terms.every((term) => haystack.includes(term));
+}
+
+export function searchInstruments(query) {
+  const terms = searchTerms(query);
+  return instruments.filter((instrument) => matchesTerms(
+    [instrument.symbol, instrument.ticker, instrument.isin, instrument.cusip, instrument.sedol, instrument.name, instrument.exchange, instrument.country],
+    terms
+  ));
+}
+
+export function searchIndices(query) {
+  const terms = searchTerms(query);
+  return indices.filter((index) => matchesTerms([index.name, index.code], terms));
+}
+
 export function createPortfolio() {
   return { cash: STARTING_CASH, positions: {} };
 }
