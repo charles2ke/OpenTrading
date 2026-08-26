@@ -30,6 +30,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Connect any bank through Open Banking consent and review masked account details on a dedicated Banking page
 - Deposit and withdraw cash with ISO 20022 (SEPA and SWIFT) transfer instructions
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
+- Setup page with installation steps for every platform and a first-run account checklist
 - Audit log page to review your recorded account activity and download it as CSV or JSON
 - Restrictive Content Security Policy and no analytics or remote scripts
 
@@ -77,6 +78,12 @@ Animated placeholders keep the news panel in place while headlines are being fet
 ### Beginner's guide
 
 ![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)
+
+### Setup
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Setup page listing installation guides for the web, Windows, macOS, Android, and iOS](e2e/screenshots/setup-desktop.png) | ![Setup page on mobile](e2e/screenshots/setup-mobile.png) |
 
 ### Audit log
 

@@ -56,6 +56,9 @@ test.describe("documentation screenshots", () => {
     await page.goto("/learn.html");
     await page.screenshot({ path: shot(`beginners-guide-${suffix}`), fullPage: true });
 
+    await page.goto("/setup.html");
+    await page.screenshot({ path: shot(`setup-${suffix}`), fullPage: true });
+
     await page.evaluate(() => navigator.serviceWorker?.getRegistrations()
       .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))));
     await page.route("**/api/audit*", async (route) => route.fulfill({
