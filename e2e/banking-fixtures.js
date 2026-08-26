@@ -1,6 +1,10 @@
 const BANKING_FIXTURES = {
   connections: [{ connectionId: "conn-1", institutionId: "commerzbank", status: "linked" }],
-  institutions: [{ id: "commerzbank", name: "Commerzbank", country: "DE" }],
+  institutions: [
+    { id: "commerzbank", name: "Commerzbank", country: "DE" },
+    { id: "bank-of-ireland", name: "Bank of Ireland", country: "IE" },
+    { id: "hdfc-bank", name: "HDFC Bank", country: "IN" }
+  ],
   accounts: [{
     id: "acc-1",
     name: "Everyday account",
@@ -18,7 +22,12 @@ export async function stubBanking(page) {
     const url = new URL(route.request().url());
     const method = route.request().method();
     const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
-    if (url.pathname.endsWith("/institutions")) return json({ institutions: BANKING_FIXTURES.institutions });
+    if (url.pathname.endsWith("/institutions")) {
+      const country = url.searchParams.get("country") || "";
+      return json({
+        institutions: BANKING_FIXTURES.institutions.filter((institution) => !country || institution.country === country)
+      });
+    }
     if (url.pathname.endsWith("/accounts")) return json({ accounts: BANKING_FIXTURES.accounts });
     if (url.pathname.endsWith("/connections") && method === "POST") {
       return json({ id: "conn-1", status: "pending", consentUrl: "", institutionId: "commerzbank" }, 201);

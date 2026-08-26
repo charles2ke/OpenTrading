@@ -216,17 +216,18 @@ function handleNewsApi(request, response, requestUrl) {
 
 async function handleBankingApi(request, response, pathname, requestUrl) {
   if (!bankService.isConfigured()) return sendJson(response, 503, { error: "Bank connections are not configured." });
+
+  if (pathname === "/api/banking/institutions" && request.method === "GET") {
+    const institutions = await bankService.listInstitutions(requestUrl.searchParams.get("country") || "");
+    return sendJson(response, 200, { institutions });
+  }
+
   const dataStore = await dataStorePromise;
   if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
   const auditRepository = dataStore.audit;
   const ownerId = await resolveOwnerId(request);
   if (!ownerId) return sendJson(response, 400, { error: "Invalid client ID." });
   const connections = dataStore.bank;
-
-  if (pathname === "/api/banking/institutions" && request.method === "GET") {
-    const institutions = await bankService.listInstitutions(requestUrl.searchParams.get("country") || "");
-    return sendJson(response, 200, { institutions });
-  }
 
   if (pathname === "/api/banking/connections" && request.method === "GET") {
     return sendJson(response, 200, { connections: await connections.list(ownerId) });
