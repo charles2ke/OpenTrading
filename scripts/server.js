@@ -40,6 +40,10 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
+function isJsonContentType(contentType) {
+  return typeof contentType === "string" && contentType.split(";")[0].trim().toLowerCase() === "application/json";
+}
+
 async function auditActivity(auditRepository, event) {
   if (!auditRepository) return;
   try {
@@ -214,7 +218,7 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
   }
 
   if (pathname === "/api/banking/connections" && request.method === "POST") {
-    if (request.headers["content-type"] !== "application/json") return sendJson(response, 415, { error: "JSON content is required." });
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
     const { institutionId } = await readJson(request);
     const connection = await bankService.createConnection(institutionId);
     await connections.link(ownerId, connection);
@@ -239,7 +243,7 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
   }
 
   if (pathname === "/api/banking/transfers" && request.method === "POST") {
-    if (request.headers["content-type"] !== "application/json") return sendJson(response, 415, { error: "JSON content is required." });
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
     const { connectionId, transfer } = await readJson(request);
     if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
     const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();

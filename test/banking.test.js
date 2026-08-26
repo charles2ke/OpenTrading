@@ -98,6 +98,7 @@ test("validates transfers against the portfolio and payment standards", () => {
   assert.equal(validateTransfer(portfolio, transfer({ amount: 0 })), "Enter an amount greater than zero.");
   assert.equal(validateTransfer(portfolio, transfer({ amount: "abc" })), "Enter an amount greater than zero.");
   assert.equal(validateTransfer(portfolio, transfer({ amount: 10.005 })), "Amounts support at most two decimal places.");
+  assert.equal(validateTransfer(portfolio, transfer({ currency: "JPY", amount: 10.5 })), "Amounts for this currency must be whole numbers.");
   assert.equal(validateTransfer(portfolio, transfer({ amount: TRANSFER_LIMIT + 1 })), "Transfers are limited to 1,000,000 per instruction.");
   assert.equal(validateTransfer(portfolio, transfer({ currency: "XYZ" })), "Choose a supported ISO 4217 currency.");
   assert.equal(validateTransfer(portfolio, transfer({ iban: "DE00" })), "Enter a valid IBAN.");
@@ -127,6 +128,9 @@ test("builds an ISO 20022 payment instruction", () => {
   assert.equal(defaults.remittanceInformation, "OpenTrading transfer");
   assert.equal(defaults.messageId, "");
   assert.equal(Number.isNaN(Date.parse(defaults.createdAt)), false);
+
+  const jpyInstruction = buildPaymentInstruction(transfer({ currency: "JPY", amount: 250 }));
+  assert.deepEqual(jpyInstruction.amount, { currency: "JPY", value: 250, minorUnits: 250 });
 });
 
 test("applies valid transfers to the portfolio cash balance", () => {

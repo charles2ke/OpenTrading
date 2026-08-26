@@ -53,6 +53,10 @@ export function minorUnits(amount, currency) {
   return Math.round(amount * factor);
 }
 
+function minorUnitFactor(currency) {
+  return ZERO_DECIMAL_CURRENCIES.has(normalizeBankIdentifier(currency)) ? 1 : 100;
+}
+
 export function isBankAccount(value) {
   return Boolean(value)
     && typeof value === "object"
@@ -81,11 +85,15 @@ export function sanitizeBankAccount(account) {
 
 export function validateTransfer(portfolio, transfer) {
   const amount = Number(transfer?.amount);
+  const currency = normalizeBankIdentifier(transfer?.currency);
+  const factor = minorUnitFactor(currency);
   if (!TRANSFER_DIRECTIONS.includes(transfer?.direction)) return "Choose deposit or withdrawal.";
   if (!Number.isFinite(amount) || amount <= 0) return "Enter an amount greater than zero.";
-  if (Math.round(amount * 100) / 100 !== amount) return "Amounts support at most two decimal places.";
+  if (Math.round(amount * factor) / factor !== amount) return factor === 1
+    ? "Amounts for this currency must be whole numbers."
+    : "Amounts support at most two decimal places.";
   if (amount > TRANSFER_LIMIT) return `Transfers are limited to ${TRANSFER_LIMIT.toLocaleString("en-US")} per instruction.`;
-  if (!SUPPORTED_TRANSFER_CURRENCIES.includes(normalizeBankIdentifier(transfer?.currency))) return "Choose a supported ISO 4217 currency.";
+  if (!SUPPORTED_TRANSFER_CURRENCIES.includes(currency)) return "Choose a supported ISO 4217 currency.";
   if (!isValidIban(transfer?.iban)) return "Enter a valid IBAN.";
   if (!isValidBic(transfer?.bic)) return "Enter a valid BIC (SWIFT) code.";
   if (transfer.direction === "withdrawal" && amount > portfolio.cash) return "This transfer exceeds your available cash.";
@@ -95,6 +103,7 @@ export function validateTransfer(portfolio, transfer) {
 export function buildPaymentInstruction(transfer, { messageId, endToEndId, createdAt } = {}) {
   const currency = normalizeBankIdentifier(transfer.currency);
   const iban = normalizeBankIdentifier(transfer.iban);
+  const amountMinorUnits = minorUnits(Number(transfer.amount), currency);
   return Object.freeze({
     standard: "ISO20022:pain.001.001.09",
     scheme: transferScheme(transfer),
@@ -104,8 +113,8 @@ export function buildPaymentInstruction(transfer, { messageId, endToEndId, creat
     direction: transfer.direction,
     amount: {
       currency,
-      value: Math.round(Number(transfer.amount) * 100) / 100,
-      minorUnits: minorUnits(Number(transfer.amount), currency)
+      value: amountMinorUnits / minorUnitFactor(currency),
+      minorUnits: amountMinorUnits
     },
     counterparty: Object.freeze({
       name: String(transfer.accountName ?? "Account holder").slice(0, 140),

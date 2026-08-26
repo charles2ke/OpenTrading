@@ -88,14 +88,14 @@ export class BankConnectionRepository {
 
   async owns(clientId, connectionId) {
     const document = await this.collection.findOne(
-      { ownerKey: this.ownerKey(clientId), connectionId: String(connectionId) },
+      { ownerKey: this.ownerKey(clientId), connectionId: String(connectionId).slice(0, 64) },
       { projection: { _id: 0, connectionId: 1 } }
     );
     return Boolean(document);
   }
 
   async unlink(clientId, connectionId) {
-    const result = await this.collection.deleteOne({ ownerKey: this.ownerKey(clientId), connectionId: String(connectionId) });
+    const result = await this.collection.deleteOne({ ownerKey: this.ownerKey(clientId), connectionId: String(connectionId).slice(0, 64) });
     return result.deletedCount > 0;
   }
 }
