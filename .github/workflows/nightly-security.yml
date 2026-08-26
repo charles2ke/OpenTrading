@@ -1,0 +1,64 @@
+name: Nightly security
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  remediate-dependencies:
+    name: Audit and remediate dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply safe dependency fixes
+        run: npm audit fix --package-lock-only
+      - run: npm ci
+      - name: Verify dependency audit
+        run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build
+      - name: Create remediation pull request
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            exit 0
+          fi
+          branch="security/npm-audit-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add package-lock.json
+          git commit -m "fix: remediate npm audit findings"
+          git push origin "$branch"
+          gh pr create \
+            --base "${{ github.event.repository.default_branch }}" \
+            --head "$branch" \
+            --title "fix: remediate npm audit findings" \
+            --body "Automated nightly dependency remediation. The workflow ran \`npm audit\`, linting, unit tests, and a production build."
