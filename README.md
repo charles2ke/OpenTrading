@@ -27,6 +27,34 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Built-in beginner's guide to investing concepts in the Learn section
 - Restrictive Content Security Policy and no analytics or remote scripts
 
+## Screenshots
+
+Every image below is captured automatically by `npx playwright test screenshots`, so the documentation always matches the shipped UI.
+
+### Dashboard
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Desktop dashboard showing portfolio metrics, global markets, holdings, watchlist, and the news feed](e2e/screenshots/dashboard-desktop.png) | ![Mobile dashboard stacked into a single column](e2e/screenshots/dashboard-mobile.png) |
+
+### Navigation
+
+![Mobile navigation drawer open over the dashboard](e2e/screenshots/navigation-mobile.png)
+
+### Placing an order
+
+| Order ticket | Confirmation |
+| --- | --- |
+| ![Order dialog with stock, side, share count, and estimated total](e2e/screenshots/place-order-desktop.png) | ![Dashboard after a filled order showing the confirmation toast and the new position](e2e/screenshots/order-confirmation-desktop.png) |
+
+### Order validation
+
+![Order dialog rejecting a sell order for shares that are not owned](e2e/screenshots/order-validation-desktop.png)
+
+### Searching markets
+
+![Market movers filtered to Tesla by the search field](e2e/screenshots/market-search-desktop.png)
+
 ## Development
 
 Requires Node.js 22 or newer.
@@ -47,6 +75,7 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 ```
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
+MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
 
 ### Authentication
 

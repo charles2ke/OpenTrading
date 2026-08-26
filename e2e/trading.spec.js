@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("shows a responsive global market dashboard", async ({ page }, testInfo) => {
+  await page.clock.setFixedTime(new Date("2026-01-05T09:00:00"));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Good morning, Demo" })).toBeVisible();
   await expect(page.getByText("S&P 500")).toBeVisible();
@@ -71,4 +72,54 @@ test("shows the beginner's guide on the website", async ({ page }) => {
   await expect(shortSelling.getByText("theoretically unlimited loss")).toBeHidden();
   await shortSelling.locator("summary").click();
   await expect(shortSelling.getByText("theoretically unlimited loss")).toBeVisible();
+});
+
+test("closes the mobile navigation after choosing a section", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto("/");
+  const menu = page.getByRole("button", { name: "Toggle navigation" });
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("link", { name: "Portfolio" }).click();
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+});
+
+test("explains when a market search has no matches", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Search markets").fill("zzzz");
+  await expect(page.getByText("No markets match your search.")).toBeVisible();
+  await page.getByLabel("Search markets").fill("Tesla");
+  await expect(page.getByText("No markets match your search.")).toBeHidden();
+});
+
+test("keeps the latest confirmation visible for consecutive orders", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Place order" }).click();
+  await page.getByRole("button", { name: "Review & place order" }).click();
+  await expect(page.locator("#toast")).toHaveClass(/visible/);
+  await page.waitForTimeout(2500);
+  await expect(page.locator("#toast")).toHaveClass(/visible/);
+  await page.getByRole("button", { name: "Place order" }).click();
+  await page.getByRole("button", { name: "Review & place order" }).click();
+  await page.waitForTimeout(1000);
+  await expect(page.locator("#toast")).toHaveClass(/visible/);
+});
+
+test("highlights the section being viewed in the sidebar", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".nav-link.active")).toHaveText("⌂Overview");
+  await page.locator("#news").evaluate((section) => {
+    window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY - 100);
+  });
+  await expect(page.locator(".nav-link.active")).toHaveText("📰News");
+});
+
+test("greets the visitor for the current time of day", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-01-05T20:00:00"));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Good evening, Demo" })).toBeVisible();
 });
