@@ -14,7 +14,7 @@
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="Primary navigation">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
         <a class="brand" href="#" aria-label="OpenTrading home">
           <span class="brand-mark">O</span><span>OpenTrading</span>
         </a>
@@ -33,7 +33,7 @@
 
       <main id="main">
         <header class="topbar">
-          <button class="menu-button" type="button" aria-label="Toggle navigation">☰</button>
+          <button class="menu-button" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div class="search-wrap">
             <label class="sr-only" for="search">Search markets</label>
             <span>⌕</span><input id="search" type="search" placeholder="Search stocks or exchanges" autocomplete="off">
@@ -45,7 +45,7 @@
 
         <div class="content">
           <section class="welcome" id="overview">
-            <div><p class="eyebrow">GLOBAL PAPER TRADING</p><h1>Good morning, Demo</h1><p>Track markets and test your strategy across leading exchanges.</p></div>
+            <div><p class="eyebrow">GLOBAL PAPER TRADING</p><h1 id="greeting">Good morning, Demo</h1><p>Track markets and test your strategy across leading exchanges.</p></div>
             <button class="primary-button" data-open-trade type="button">+ Place order</button>
           </section>
 
@@ -83,6 +83,7 @@
             <section class="panel watchlist-panel">
               <div class="section-head"><div><p class="eyebrow">WATCHLIST</p><h2>Market movers</h2></div></div>
               <div id="watchlist"></div>
+              <p id="empty-watchlist" class="empty-state" hidden>No markets match your search.</p>
             </section>
           </div>
 

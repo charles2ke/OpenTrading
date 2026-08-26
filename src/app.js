@@ -8,6 +8,7 @@ const relativeTime = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
 let portfolio = loadPortfolio(localStorage);
 let installPrompt;
 let newsRequestId = 0;
+let toastTimer;
 
 const byId = (id) => document.getElementById(id);
 const dialog = byId("trade-dialog");
@@ -18,6 +19,13 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[char]);
+}
+
+function greetingFor(date) {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function formatRelativeTime(isoDate) {
@@ -161,17 +169,60 @@ form.addEventListener("submit", (event) => {
   const toast = byId("toast");
   toast.textContent = `${order.side === "buy" ? "Bought" : "Sold"} ${order.quantity} ${order.symbol}`;
   toast.classList.add("visible");
-  window.setTimeout(() => toast.classList.remove("visible"), 3000);
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3000);
 });
 
 byId("search").addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();
-  document.querySelectorAll(".stock-row").forEach((row) => {
+  const rows = [...document.querySelectorAll(".stock-row")];
+  rows.forEach((row) => {
     row.hidden = !row.textContent.toLowerCase().includes(query);
   });
+  byId("empty-watchlist").hidden = rows.some((row) => !row.hidden);
 });
 
-document.querySelector(".menu-button").addEventListener("click", () => document.querySelector(".sidebar").classList.toggle("open"));
+const sidebar = document.querySelector(".sidebar");
+const menuButton = document.querySelector(".menu-button");
+
+function setNavigationOpen(open) {
+  sidebar.classList.toggle("open", open);
+  menuButton.setAttribute("aria-expanded", String(open));
+}
+
+menuButton.addEventListener("click", () => setNavigationOpen(!sidebar.classList.contains("open")));
+sidebar.addEventListener("click", (event) => {
+  if (event.target.closest(".nav-link")) setNavigationOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && sidebar.classList.contains("open")) {
+    setNavigationOpen(false);
+    menuButton.focus();
+  }
+});
+document.querySelector(".content").addEventListener("click", () => {
+  if (sidebar.classList.contains("open")) setNavigationOpen(false);
+});
+
+const sections = [...document.querySelectorAll(".nav-link")]
+  .map((link) => ({ link, section: document.querySelector(link.getAttribute("href")) }))
+  .filter(({ section }) => section);
+
+function updateActiveSection() {
+  if (sections.length === 0) return;
+  const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+  const current = atBottom
+    ? sections.at(-1)
+    : [...sections].reverse().find(({ section }) => section.getBoundingClientRect().top <= 120) ?? sections[0];
+  sections.forEach(({ link }) => link.classList.toggle("active", link === current.link));
+}
+
+window.addEventListener("scroll", updateActiveSection, { passive: true });
+window.addEventListener("resize", updateActiveSection);
+updateActiveSection();
+
+byId("greeting").textContent = `${greetingFor(new Date())}, Demo`;
+
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   installPrompt = event;
