@@ -6,7 +6,7 @@ A fast, secure, installable paper-trading experience for global stock exchanges.
 
 > **Simulation only:** OpenTrading does not execute real trades or provide investment advice. Market data is illustrative.
 
-New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more.
+New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more. The same guide is available on the website in the **Learn** section.
 
 See the [architecture documentation](docs/architecture.md) for the client, server, data, authentication, and deployment design.
 
@@ -24,6 +24,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
+- Built-in beginner's guide to investing concepts in the Learn section
 - Restrictive Content Security Policy and no analytics or remote scripts
 
 ## Development

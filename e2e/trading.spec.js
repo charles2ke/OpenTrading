@@ -61,3 +61,14 @@ test("offers Google and Microsoft authentication", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue with Microsoft" })).toBeVisible();
 });
+
+test("shows the beginner's guide on the website", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Learn" })).toHaveAttribute("href", "#learn");
+  await expect(page.getByRole("heading", { name: "Investor concepts for beginners" })).toBeVisible();
+  await expect(page.getByText("A stock represents ownership in a company.")).toBeVisible();
+  const shortSelling = page.locator(".guide-topic").filter({ hasText: "Short selling" });
+  await expect(shortSelling.getByText("theoretically unlimited loss")).toBeHidden();
+  await shortSelling.locator("summary").click();
+  await expect(shortSelling.getByText("theoretically unlimited loss")).toBeVisible();
+});
