@@ -20,6 +20,7 @@ flowchart LR
 - `index.html` defines the accessible dashboard shell and loads the application entry point.
 - `src/main.jsx` mounts the React authentication controls. The trading dashboard in `src/app.js` uses the DOM directly to render market data, positions, order feedback, and installation controls.
 - `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes.
+- `audit.html` and `src/audit.js` render the audit log page. It loads the signed-in user's pseudonymized audit events, filters them by text and status, and exports the filtered rows to CSV or JSON with `src/core/audit.js`.
 - `src/core/storage.js` is the persistence adapter. It reads and writes the local portfolio and client identifier, then synchronizes the portfolio with the optional server API.
 - `public/manifest.webmanifest` and `public/service-worker.js` make the site installable. The service worker precaches essential application assets and caches successful same-origin GET responses for offline fallback.
 
@@ -33,6 +34,7 @@ The client starts with a local portfolio. When remote persistence is available, 
 | --- | --- |
 | `GET /api/portfolio` | Returns the current portfolio, or `404` when none exists. |
 | `PUT /api/portfolio` | Validates and saves a portfolio. |
+| `GET /api/audit` | Returns the signed-in user's own audit events, newest first, capped by `limit` (default 200, maximum 1000). Returns `401` when signed out and `503` without a database. |
 | `GET /api/securities` | Returns cached securities with ticker, ISIN, CUSIP, and SEDOL identifiers. |
 | `GET /api/securities/{identifierType}/{identifier}` | Returns one cached security by `symbol`, `ticker`, `isin`, `cusip`, or `sedol`. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
@@ -54,6 +56,8 @@ flowchart LR
 ```
 
 When `MONGODB_URI` is configured, `src/server/portfolio-repository.js` creates MongoDB-backed portfolio, authentication, and audit stores. Portfolio owners and audit actors are persisted as pseudonymous keyed hashes rather than raw identifiers, session records keep only minimal display data, and audit metadata is scrubbed for PII before insert. The database also holds short-lived OIDC states and sessions, plus expiring audit events; TTL indexes remove expired records.
+
+Audit history is readable only by its own actor: the API resolves the session user, hashes the identifier with the privacy key, and queries only events stored under that actor key. Metadata is scrubbed again on read, and downloads are generated in the browser from the rows already returned to the page.
 
 MongoDB and authentication are optional. Without a database connection, portfolio and authentication endpoints return `503`, while client-side paper trading and local storage continue to work.
 

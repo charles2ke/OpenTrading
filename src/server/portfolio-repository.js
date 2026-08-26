@@ -122,12 +122,30 @@ export class AuditRepository {
     ]);
   }
 
+  actorKey(actor) {
+    return actor ? `actor:${pseudonymizeIdentifier(actor, this.privacyKey)}` : "actor:anonymous";
+  }
+
+  async listForActor(actor, limit = 200) {
+    const size = Math.min(1_000, Math.max(1, Number.isFinite(limit) ? Math.trunc(limit) : 200));
+    const events = await this.collection
+      .find({ actor: this.actorKey(actor) }, { projection: { _id: 0, expiresAt: 0 }, sort: { occurredAt: -1 }, limit: size })
+      .toArray();
+    return events.map((event) => ({
+      action: event.action,
+      actor: event.actor,
+      status: event.status,
+      metadata: scrubPii(event.metadata || {}),
+      occurredAt: event.occurredAt instanceof Date ? event.occurredAt.toISOString() : String(event.occurredAt ?? "")
+    }));
+  }
+
   async record(event) {
     const occurredAt = event.occurredAt instanceof Date ? event.occurredAt : new Date();
     const expiresAt = new Date(occurredAt.getTime() + (this.retentionDays * 24 * 60 * 60 * 1000));
     await this.collection.insertOne({
       action: String(event.action || "unknown").slice(0, 120),
-      actor: event.actor ? `actor:${pseudonymizeIdentifier(event.actor, this.privacyKey)}` : "actor:anonymous",
+      actor: event.actor ? this.actorKey(event.actor) : "actor:anonymous",
       status: event.status === "failure" ? "failure" : "success",
       metadata: scrubPii(event.metadata || {}),
       occurredAt,

@@ -11,7 +11,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, "index.html"),
-        learn: resolve(import.meta.dirname, "learn.html")
+        learn: resolve(import.meta.dirname, "learn.html"),
+        audit: resolve(import.meta.dirname, "audit.html")
       }
     }
   }

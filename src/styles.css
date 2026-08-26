@@ -114,6 +114,17 @@ td { padding: 13px 9px; border-top: 1px solid var(--border); font-size: 11px; }
 .guide-topic ul { padding-left: 18px; }
 .guide-topic li { margin-bottom: 6px; }
 .guide-example { color: var(--muted) !important; }
+.audit-panel { margin-top: 16px; }
+.audit-intro { margin: 0 0 16px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.audit-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 16px; }
+.audit-controls label { margin: 0; }
+.audit-controls input, .audit-controls select { min-width: 190px; }
+.audit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.audit-status { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: capitalize; }
+.audit-status.success { color: var(--green); background: #10342f; }
+.audit-status.failure { color: var(--red); background: #3a1622; }
+.audit-actor { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, monospace; font-size: 11px; }
+@media (max-width: 760px) { .audit-actions { margin-left: 0; } }
 .stock-row > span:last-child { text-align: right; }.stock-row:hover { background: #122138; }
 dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid #2a4262; border-radius: 14px; color: white; background: #0d1a2b; box-shadow: 0 30px 80px rgb(0 0 0 / 60%); }
 dialog::backdrop { background: rgb(2 8 16 / 75%); backdrop-filter: blur(5px); }
