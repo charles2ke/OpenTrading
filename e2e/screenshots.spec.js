@@ -51,5 +51,8 @@ test.describe("documentation screenshots", () => {
     await page.locator(".news-skeleton").first().waitFor();
     await page.locator("#news").scrollIntoViewIfNeeded();
     await page.screenshot({ path: shot(`news-loading-${suffix}`) });
+
+    await page.goto("/learn.html");
+    await page.screenshot({ path: shot(`beginners-guide-${suffix}`), fullPage: true });
   });
 });

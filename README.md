@@ -6,7 +6,7 @@ A fast, secure, installable paper-trading experience for global stock exchanges.
 
 > **Simulation only:** OpenTrading does not execute real trades or provide investment advice. Market data is illustrative.
 
-New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more. The same guide is available on the website in the **Learn** section.
+New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more. The same guide is available on the website on its own **Learn** page.
 
 See the [architecture documentation](docs/architecture.md) for the client, server, data, authentication, and deployment design.
 
@@ -24,7 +24,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
-- Built-in beginner's guide to investing concepts in the Learn section
+- Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Restrictive Content Security Policy and no analytics or remote scripts
 
 ## Screenshots
@@ -60,6 +60,10 @@ Every image below is captured automatically by `npx playwright test screenshots`
 Animated placeholders keep the news panel in place while headlines are being fetched.
 
 ![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
+
+### Beginner's guide
+
+![Learn page explaining investing concepts for beginners](e2e/screenshots/beginners-guide-desktop.png)
 
 ## Development
 

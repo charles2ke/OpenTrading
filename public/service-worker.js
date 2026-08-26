@@ -1,5 +1,5 @@
 const CACHE = "opentrading-v1";
-const ASSETS = ["./", "./index.html", "./assets/icon.svg", "./manifest.webmanifest"];
+const ASSETS = ["./", "./index.html", "./learn.html", "./assets/icon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))));
 self.addEventListener("activate", (event) => event.waitUntil(
