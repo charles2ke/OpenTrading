@@ -36,6 +36,19 @@ test("filters market movers", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
 });
 
+test("shows an unconfigured state for the news feed and fetches news for watched stocks", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "News feed" })).toBeVisible();
+  await expect(page.getByText("No news yet. Buy a stock")).toBeVisible();
+
+  const newsRequest = page.waitForRequest((request) => request.url().includes("/api/news?symbols="));
+  await page.getByRole("button", { name: "TSLA" }).click();
+  await page.getByRole("button", { name: "Review & place order" }).click();
+  const request = await newsRequest;
+  expect(request.url()).toContain("symbols=TSLA");
+  await expect(page.getByText("News feed is not configured yet.")).toBeVisible();
+});
+
 test("reports when authentication is not configured", async ({ page }) => {
   const session = await page.request.get("/auth/session");
   expect(session.status()).toBe(503);

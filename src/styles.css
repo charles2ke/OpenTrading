@@ -86,6 +86,16 @@ td { padding: 13px 9px; border-top: 1px solid var(--border); font-size: 11px; }
 .ticker { display: grid; place-items: center; width: 31px; height: 31px; flex: 0 0 31px; border-radius: 8px; background: #1a2c45; color: #92b8f8; font-size: 10px; font-weight: 800; }
 .exchange { padding: 4px 7px; border-radius: 5px; color: #a6b7cb; background: #17273b; font-size: 9px; }
 .empty-state { padding: 34px 10px 20px; border-top: 1px solid var(--border); color: var(--muted); text-align: center; font-size: 12px; }
+.news-panel { margin-top: 16px; }
+.news-feed { display: grid; gap: 12px; }
+.news-item { display: grid; gap: 5px; padding: 13px; border: 1px solid var(--border); border-radius: 8px; background: #0e1c2e; }
+.news-item a { color: var(--text); text-decoration: none; }
+.news-item a:hover { text-decoration: underline; }
+.news-item small { color: var(--muted); font-size: 10px; }
+.news-source { justify-self: start; padding: 3px 8px; border-radius: 5px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.news-source.news { color: #75a6ff; background: #152e55; }
+.news-source.twitter { color: #7fd4ff; background: #0f3345; }
+.news-source.other { color: #a6b7cb; background: #17273b; }
 .stock-row { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 11px 0; border: 0; border-top: 1px solid var(--border); color: white; background: transparent; text-align: left; cursor: pointer; }
 .stock-row > span:last-child { text-align: right; }.stock-row:hover { background: #122138; }
 dialog { width: min(440px, calc(100% - 32px)); padding: 0; border: 1px solid #2a4262; border-radius: 14px; color: white; background: #0d1a2b; box-shadow: 0 30px 80px rgb(0 0 0 / 60%); }
