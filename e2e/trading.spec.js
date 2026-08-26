@@ -17,7 +17,7 @@ test("places and persists a validated paper order", async ({ page }) => {
   await page.getByLabel("Shares").fill("2");
   await expect(page.getByText("Estimated total").locator("..").getByText("$464.28")).toBeVisible();
   await page.getByRole("button", { name: "Review & place order" }).click();
-  await expect(page.getByRole("status")).toHaveText("Bought 2 AAPL");
+  await expect(page.locator("#toast")).toHaveText("Bought 2 AAPL");
   await expect(page.getByText("Apple", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Apple", { exact: true })).toBeVisible();
@@ -69,7 +69,7 @@ test("keeps trading available when the search matches nothing", async ({ page })
   await page.getByRole("button", { name: "Place order" }).click();
   await page.getByLabel("Stock").selectOption("HSBA");
   await page.getByRole("button", { name: "Review & place order" }).click();
-  await expect(page.getByRole("status")).toHaveText("Bought 1 HSBA");
+  await expect(page.locator("#toast")).toHaveText("Bought 1 HSBA");
 });
 
 test("shows an unconfigured state for the news feed and fetches news for watched stocks", async ({ page }) => {
