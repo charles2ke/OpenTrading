@@ -21,6 +21,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 ## Features
 
 - Global market overview across US, UK, German, and Japanese exchanges
+- Search every listed market and index by name, ticker, exchange, country, or ISIN/CUSIP/SEDOL identifier
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
