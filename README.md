@@ -164,7 +164,7 @@ Unit tests enforce 100% line, branch, and function coverage for trading, banking
 Every merge to `main` builds and publishes the website to GitHub Pages. The `Build desktop apps` workflow builds `x64` and `arm64` Windows installers and macOS `.dmg`/`.zip` packages on every push and pull request and uploads them as artifacts; pushing a `v*` tag attaches them to a GitHub release. macOS packages are unsigned, so Gatekeeper asks for confirmation on first launch; set the `CSC_LINK` and `CSC_KEY_PASSWORD` secrets and drop `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow to sign them. Successful merged pull requests also update the release status below.
 
 <!-- release-status:start -->
-No pull request has been merged yet.
+Latest merged pull request: #20
 <!-- release-status:end -->
 
 ## Security
