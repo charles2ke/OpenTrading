@@ -177,6 +177,24 @@ test("highlights the section being viewed in the sidebar", async ({ page }) => {
   await expect(page.locator(".nav-link.active")).toHaveText("📰News");
 });
 
+test("opens the order dialog from the Trade navigation link", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#trade-dialog")).toBeHidden();
+  const menu = page.getByRole("button", { name: "Toggle navigation" });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole("link", { name: "Trade" }).click();
+  await expect(page.getByRole("heading", { name: "Place an order" })).toBeVisible();
+});
+
+test("opens the order dialog when arriving from another page's Trade link", async ({ page }) => {
+  await page.goto("/learn.html");
+  const menu = page.getByRole("button", { name: "Toggle navigation" });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole("link", { name: "Trade" }).click();
+  await expect(page).toHaveURL(/index\.html#trade$/);
+  await expect(page.getByRole("heading", { name: "Place an order" })).toBeVisible();
+});
+
 test("greets the visitor for the current time of day", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-01-05T20:00:00"));
   await page.goto("/");
