@@ -1,12 +1,12 @@
 export const STARTING_CASH = 100_000;
 
 export const instruments = Object.freeze([
-  { symbol: "AAPL", name: "Apple", exchange: "NASDAQ", country: "US", price: 232.14, previousClose: 228.76 },
-  { symbol: "MSFT", name: "Microsoft", exchange: "NASDAQ", country: "US", price: 418.79, previousClose: 420.43 },
-  { symbol: "TSLA", name: "Tesla", exchange: "NASDAQ", country: "US", price: 351.62, previousClose: 342.11 },
-  { symbol: "7203", name: "Toyota Motor", exchange: "TSE", country: "JP", price: 18.42, previousClose: 18.19 },
-  { symbol: "SAP", name: "SAP", exchange: "XETRA", country: "DE", price: 271.24, previousClose: 267.8 },
-  { symbol: "HSBA", name: "HSBC", exchange: "LSE", country: "GB", price: 13.76, previousClose: 13.59 }
+  { symbol: "AAPL", ticker: "AAPL", isin: "US0378331005", cusip: "037833100", sedol: "2046251", name: "Apple", exchange: "NASDAQ", country: "US", price: 232.14, previousClose: 228.76 },
+  { symbol: "MSFT", ticker: "MSFT", isin: "US5949181045", cusip: "594918104", sedol: "2588173", name: "Microsoft", exchange: "NASDAQ", country: "US", price: 418.79, previousClose: 420.43 },
+  { symbol: "TSLA", ticker: "TSLA", isin: "US88160R1014", cusip: "88160R101", sedol: "B616C79", name: "Tesla", exchange: "NASDAQ", country: "US", price: 351.62, previousClose: 342.11 },
+  { symbol: "7203", ticker: "7203", isin: "JP3633400001", cusip: "892331307", sedol: "6900643", name: "Toyota Motor", exchange: "TSE", country: "JP", price: 18.42, previousClose: 18.19 },
+  { symbol: "SAP", ticker: "SAP", isin: "DE0007164600", cusip: "803054204", sedol: "4846288", name: "SAP", exchange: "XETRA", country: "DE", price: 271.24, previousClose: 267.8 },
+  { symbol: "HSBA", ticker: "HSBA", isin: "GB0005405286", cusip: "404280406", sedol: "0540528", name: "HSBC", exchange: "LSE", country: "GB", price: 13.76, previousClose: 13.59 }
 ]);
 
 export const indices = Object.freeze([

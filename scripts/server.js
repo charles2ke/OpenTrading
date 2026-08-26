@@ -2,9 +2,10 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
-import { isPortfolio } from "../src/core/trading.js";
+import { instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
+import { createSecuritiesCache } from "../src/server/securities-cache.js";
 
 const root = process.env.SERVE_DIR || process.cwd();
 const port = Number(process.env.PORT || 4173);
@@ -27,6 +28,7 @@ const securityHeaders = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY"
 };
+const securitiesCache = createSecuritiesCache(instruments);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -93,10 +95,24 @@ async function handlePortfolioApi(request, response) {
   return sendJson(response, 405, { error: "Method not allowed." });
 }
 
+function handleSecuritiesApi(request, response, pathname) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  if (pathname === "/api/securities") return sendJson(response, 200, { securities: securitiesCache.list() });
+  const match = pathname.match(/^\/api\/securities\/(symbol|ticker|isin|cusip|sedol)\/(.+)$/i);
+  if (!match) return sendJson(response, 404, { error: "Security route not found." });
+  const [, type, identifier] = match;
+  const security = securitiesCache.findByIdentifier(type, identifier);
+  return sendJson(response, security ? 200 : 404, security ?? { error: "Security not found." });
+}
+
 createServer(async (request, response) => {
+  let parsedUrl;
   let pathname;
   try {
-    const parsedUrl = new URL(request.url, process.env.APP_BASE_URL || `http://127.0.0.1:${port}`);
+    parsedUrl = new URL(request.url, process.env.APP_BASE_URL || `http://127.0.0.1:${port}`);
     pathname = decodeURIComponent(parsedUrl.pathname);
     if (pathname.startsWith("/auth/")) {
       try {
@@ -115,6 +131,7 @@ createServer(async (request, response) => {
       return sendJson(response, 400, { error: "Invalid request." });
     }
   }
+  if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);
   const relative = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, "").replace(/^[/\\]+/, "");
   let file = join(root, relative || "index.html");
   try {

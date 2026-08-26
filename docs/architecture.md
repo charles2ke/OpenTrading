@@ -33,10 +33,25 @@ The client starts with a local portfolio. When remote persistence is available, 
 | --- | --- |
 | `GET /api/portfolio` | Returns the current portfolio, or `404` when none exists. |
 | `PUT /api/portfolio` | Validates and saves a portfolio. |
+| `GET /api/securities` | Returns cached securities with ticker, ISIN, CUSIP, and SEDOL identifiers. |
+| `GET /api/securities/{identifierType}/{identifier}` | Returns one cached security by `symbol`, `ticker`, `isin`, `cusip`, or `sedol`. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
 | `GET /auth/google` and `GET /auth/microsoft` | Starts the corresponding sign-in flow. |
 | `GET /auth/{provider}/callback` | Completes the provider callback. |
 | `POST /auth/logout` | Deletes the current session. |
+
+### Securities cache flow
+
+```mermaid
+flowchart LR
+  TradingData[src/core/trading.js instruments] --> Cache[SecuritiesCache in memory]
+  Cache -->|GET /api/securities| ListEndpoint[List all securities]
+  Cache -->|GET /api/securities/symbol/{value}| SymbolEndpoint[Lookup by symbol]
+  Cache -->|GET /api/securities/ticker/{value}| TickerEndpoint[Lookup by ticker]
+  Cache -->|GET /api/securities/isin/{value}| IsinEndpoint[Lookup by ISIN]
+  Cache -->|GET /api/securities/cusip/{value}| CusipEndpoint[Lookup by CUSIP]
+  Cache -->|GET /api/securities/sedol/{value}| SedolEndpoint[Lookup by SEDOL]
+```
 
 When `MONGODB_URI` is configured, `src/server/portfolio-repository.js` creates a MongoDB-backed portfolio repository and authentication store. Portfolios are keyed by a signed-in user's provider subject or, for anonymous usage, a browser-generated UUID. The database also holds short-lived OIDC states and sessions; TTL indexes remove expired records.
 
