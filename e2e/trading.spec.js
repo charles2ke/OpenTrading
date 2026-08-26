@@ -36,11 +36,13 @@ test("filters market movers", async ({ page }) => {
   await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
 });
 
-test("offers Google and Microsoft authentication", async ({ page }) => {
+test("reports when authentication is not configured", async ({ page }) => {
   const session = await page.request.get("/auth/session");
   expect(session.status()).toBe(503);
   await expect(session.json()).resolves.toEqual({ error: "Authentication is unavailable." });
+});
 
+test("offers Google and Microsoft authentication", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
