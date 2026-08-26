@@ -37,7 +37,7 @@
           <button class="menu-button" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div class="search-wrap">
             <label class="sr-only" for="search">Search markets</label>
-            <span>⌕</span><input id="search" type="search" placeholder="Search stocks or exchanges" autocomplete="off">
+            <span>⌕</span><input id="search" type="search" placeholder="Search stocks, exchanges, indices, or ISIN" autocomplete="off">
           </div>
           <div class="market-status"><span></span> Markets simulated live</div>
           <button id="install" class="secondary-button" type="button" hidden>Install app</button>
@@ -68,6 +68,7 @@
           <section class="panel markets-panel" id="markets">
             <div class="section-head"><div><p class="eyebrow">MARKET PULSE</p><h2>Global markets</h2></div><span class="updated">Updated just now</span></div>
             <div id="indices" class="indices"></div>
+            <p id="empty-indices" class="empty-state" hidden>No indices match your search.</p>
           </section>
 
           <div class="dashboard-grid">

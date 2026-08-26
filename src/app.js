@@ -1,4 +1,4 @@
-import { executeOrder, getInstrument, indices, instruments, summarizePortfolio } from "./core/trading.js";
+import { executeOrder, getInstrument, instruments, searchIndices, searchInstruments, summarizePortfolio } from "./core/trading.js";
 import { watchedSymbols } from "./core/news.js";
 import { initNavigation } from "./navigation.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
@@ -10,6 +10,7 @@ let portfolio = loadPortfolio(localStorage);
 let installPrompt;
 let newsRequestId = 0;
 let toastTimer;
+let searchQuery = "";
 
 const byId = (id) => document.getElementById(id);
 const dialog = byId("trade-dialog");
@@ -126,13 +127,17 @@ function render() {
 }
 
 function renderMarkets() {
-  byId("indices").innerHTML = indices.map((index) => `
+  const matchedIndices = searchIndices(searchQuery);
+  const matchedInstruments = searchInstruments(searchQuery);
+
+  byId("indices").innerHTML = matchedIndices.map((index) => `
     <article class="index-card">
       <div><span class="flag">${index.flag}</span><div><strong>${index.name}</strong><small>${index.code}</small></div></div>
       <div class="index-value"><strong>${number.format(index.value)}</strong><small class="${index.change >= 0 ? "positive" : "negative"}">${index.change >= 0 ? "↗ +" : "↘ "}${index.change}%</small></div>
     </article>`).join("");
+  byId("empty-indices").hidden = matchedIndices.length > 0;
 
-  byId("watchlist").innerHTML = instruments.slice(0, 4).map((stock) => {
+  byId("watchlist").innerHTML = matchedInstruments.map((stock) => {
     const change = ((stock.price - stock.previousClose) / stock.previousClose) * 100;
     return `<button class="stock-row" type="button" data-symbol="${stock.symbol}">
       <span class="ticker">${stock.symbol.slice(0, 2)}</span>
@@ -140,10 +145,14 @@ function renderMarkets() {
       <span><strong>${currency.format(stock.price)}</strong><small class="${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</small></span>
     </button>`;
   }).join("");
+  byId("empty-watchlist").hidden = matchedInstruments.length > 0;
 
-  symbolSelect.innerHTML = instruments.map((stock) =>
+  const tradable = matchedInstruments.length > 0 ? matchedInstruments : instruments;
+  const selected = symbolSelect.value;
+  symbolSelect.innerHTML = tradable.map((stock) =>
     `<option value="${stock.symbol}">${stock.symbol} · ${stock.name} (${stock.exchange})</option>`
   ).join("");
+  if (tradable.some((stock) => stock.symbol === selected)) symbolSelect.value = selected;
 }
 
 function updateOrderTotal() {
@@ -189,12 +198,9 @@ form.addEventListener("submit", (event) => {
 });
 
 byId("search").addEventListener("input", (event) => {
-  const query = event.target.value.trim().toLowerCase();
-  const rows = [...document.querySelectorAll(".stock-row")];
-  rows.forEach((row) => {
-    row.hidden = !row.textContent.toLowerCase().includes(query);
-  });
-  byId("empty-watchlist").hidden = rows.some((row) => !row.hidden);
+  searchQuery = event.target.value;
+  renderMarkets();
+  updateOrderTotal();
 });
 
 initNavigation();
