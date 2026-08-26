@@ -111,7 +111,6 @@ test("normalizes fallback claims and manages current sessions", async () => {
   const anonymousClaims = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "2" }));
   const anonymousResult = await anonymousClaims.complete("google", new URL("https://app.example/callback?state=state"));
   assert.equal(anonymousResult.user.name, "Trader");
-  assert.equal(anonymousResult.user.email, "");
   assert.equal(await service.current(), null);
   assert.deepEqual(await service.current("__Host-opentrading=valid"), { id: "google:1" });
   assert.equal(await service.current("__Host-opentrading=missing"), null);

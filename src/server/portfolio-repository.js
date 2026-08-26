@@ -2,9 +2,9 @@ import { MongoClient, ServerApiVersion } from "mongodb";
 import { createHmac } from "node:crypto";
 import { isPortfolio } from "../core/trading.js";
 
-const DEFAULT_PRIVACY_KEY = process.env.DATA_PRIVACY_KEY || "opentrading-privacy";
+const DEFAULT_PRIVACY_KEY = "opentrading-privacy";
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const SENSITIVE_KEY_PATTERN = /(cookie|token|secret|password|email|name|subject|client|session|owner|identity|authorization)/i;
+const SENSITIVE_KEY_PATTERN = /(cookie|token|secret|password|email|subject|clientId|sessionId|ownerId|identity|authorization|fullName|firstName|lastName|displayName|userName)/i;
 
 function pseudonymizeIdentifier(value, privacyKey = DEFAULT_PRIVACY_KEY) {
   return createHmac("sha256", privacyKey).update(String(value)).digest("hex");
@@ -109,9 +109,9 @@ export class AuthStore {
 }
 
 export class AuditRepository {
-  constructor(collection, retentionDays = Number(process.env.AUDIT_RETENTION_DAYS || 365), privacyKey = DEFAULT_PRIVACY_KEY) {
+  constructor(collection, retentionDays = 365, privacyKey = DEFAULT_PRIVACY_KEY) {
     this.collection = collection;
-    this.retentionDays = Math.max(1, Number.isFinite(retentionDays) ? retentionDays : 365);
+    this.retentionDays = Math.min(3_650, Math.max(1, Number.isFinite(retentionDays) ? retentionDays : 365));
     this.privacyKey = privacyKey;
   }
 
@@ -137,7 +137,10 @@ export class AuditRepository {
 }
 
 export async function connectDataStore(uri, databaseName = "opentrading", Client = MongoClient) {
-  const privacyKey = process.env.DATA_PRIVACY_KEY || "opentrading-privacy";
+  const privacyKey = process.env.DATA_PRIVACY_KEY || DEFAULT_PRIVACY_KEY;
+  if (!process.env.DATA_PRIVACY_KEY && process.env.NODE_ENV !== "test") {
+    console.warn("DATA_PRIVACY_KEY is not configured. Using default development key; set DATA_PRIVACY_KEY for production.");
+  }
   const client = new Client(uri, {
     serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
     maxPoolSize: 10,

@@ -39,7 +39,9 @@ async function auditActivity(auditRepository, event) {
   if (!auditRepository) return;
   try {
     await auditRepository.record(event);
-  } catch {}
+  } catch (error) {
+    console.error("Audit logging failed:", error?.message || error);
+  }
 }
 
 async function readJson(request) {
@@ -94,10 +96,21 @@ async function handleAuth(request, response, pathname, requestUrl) {
     response.writeHead(302, { ...securityHeaders, Location: redirect.href, "Cache-Control": "no-store" });
     return response.end();
   }
-  const result = await authService.complete(provider, requestUrl);
+  let result;
+  try {
+    result = await authService.complete(provider, requestUrl);
+  } catch {
+    await auditActivity(auditRepository, {
+      action: "auth.login.complete",
+      actor: "anonymous",
+      status: "failure",
+      metadata: { provider }
+    });
+    return sendJson(response, 400, { error: "Authentication failed." });
+  }
   await auditActivity(auditRepository, {
     action: "auth.login.complete",
-    actor: result.user.id,
+    actor: result.user?.id || "anonymous",
     status: "success",
     metadata: { provider }
   });
