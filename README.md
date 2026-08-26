@@ -4,6 +4,8 @@ A fast, secure, installable paper-trading experience for global stock exchanges.
 
 > **Simulation only:** OpenTrading does not execute real trades or provide investment advice. Market data is illustrative.
 
+New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more.
+
 See the [architecture documentation](docs/architecture.md) for the client, server, data, authentication, and deployment design.
 
 ## Apps
