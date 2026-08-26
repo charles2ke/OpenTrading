@@ -85,7 +85,6 @@ export class AuthService {
     const user = {
       id: `${provider}:${claims.sub}`,
       name: String(claims.name || claims.email || "Trader").slice(0, 100),
-      email: claims.email ? String(claims.email).slice(0, 254) : "",
       provider
     };
     await this.store.saveSession(sessionId, { user, expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS) });
