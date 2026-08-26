@@ -48,7 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- package-lock.json; then
+          if git diff --quiet HEAD -- package-lock.json; then
             exit 0
           fi
           branch="security/npm-audit-${{ github.run_id }}"
