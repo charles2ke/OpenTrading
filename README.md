@@ -60,6 +60,7 @@ Every image below is captured automatically by `npx playwright test screenshots`
 Animated placeholders keep the news panel in place while headlines are being fetched.
 
 ![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
+![News feed showing animated shimmer placeholders while data loads on mobile](e2e/screenshots/news-loading-mobile.png)
 
 ### Beginner's guide
 
