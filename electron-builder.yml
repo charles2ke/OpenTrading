@@ -1,0 +1,30 @@
+appId: io.github.charles2ke.opentrading
+productName: OpenTrading
+copyright: Copyright © OpenTrading contributors
+directories:
+  output: release
+  buildResources: desktop/build
+files:
+  - dist/**
+  - desktop/main.cjs
+  - package.json
+  - "!node_modules/**"
+asar: true
+npmRebuild: false
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  artifactName: ${productName}-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  shortcutName: OpenTrading
