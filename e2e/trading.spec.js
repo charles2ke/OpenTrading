@@ -89,7 +89,9 @@ test("keeps the latest confirmation visible for consecutive orders", async ({ pa
   await page.goto("/");
   await page.getByRole("button", { name: "Place order" }).click();
   await page.getByRole("button", { name: "Review & place order" }).click();
+  await expect(page.locator("#toast")).toHaveClass(/visible/);
   await page.waitForTimeout(2500);
+  await expect(page.locator("#toast")).toHaveClass(/visible/);
   await page.getByRole("button", { name: "Place order" }).click();
   await page.getByRole("button", { name: "Review & place order" }).click();
   await page.waitForTimeout(1000);

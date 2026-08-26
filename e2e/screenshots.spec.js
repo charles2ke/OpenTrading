@@ -6,8 +6,8 @@ const shot = (name) => `${directory}${name}.png`;
 test.describe("documentation screenshots", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "Documentation images are captured once, on Chromium.");
 
-  test("captures the pages and actions used in the README", async ({ page }, testInfo) => {
-    const mobile = testInfo.project.name === "android";
+  test("captures the pages and actions used in the README", async ({ page }) => {
+    const mobile = (page.viewportSize()?.width ?? 0) < 768;
     const suffix = mobile ? "mobile" : "desktop";
     await page.clock.setFixedTime(new Date("2026-01-05T09:00:00"));
     await page.goto("/");
