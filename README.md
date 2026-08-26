@@ -25,6 +25,8 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Validated buy and sell paper orders
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
+- Connect any bank through Open Banking consent and review masked account details
+- Deposit and withdraw cash with ISO 20022 (SEPA and SWIFT) transfer instructions
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Audit log page to review your recorded account activity and download it as CSV or JSON
 - Restrictive Content Security Policy and no analytics or remote scripts
@@ -63,6 +65,12 @@ Animated placeholders keep the news panel in place while headlines are being fet
 
 ![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
 ![News feed showing animated shimmer placeholders while data loads on mobile](e2e/screenshots/news-loading-mobile.png)
+
+### Banking
+
+| Linked accounts | Secure transfer |
+| --- | --- |
+| ![Banking panel listing a connected bank account with a masked IBAN and balance](e2e/screenshots/banking-desktop.png) | ![Transfer dialog with direction, currency, amount, IBAN, BIC, and the SEPA settlement scheme](e2e/screenshots/transfer-desktop.png) |
 
 ### Beginner's guide
 
@@ -114,6 +122,18 @@ MONGODB_URI='...' npm run dev
 
 Optionally set `MICROSOFT_TENANT_ID`; it defaults to `common`.
 
+### Bank connections and transfers
+
+Bank connections use an Open Banking (PSD2/FDX-style) provider. Consent is granted at your own bank, so OpenTrading never handles banking credentials, and only masked account details are shown. Transfers are prepared as ISO 20022 `pain.001` instructions and settle over SEPA for euro payments inside the SEPA zone or over SWIFT otherwise.
+
+```bash
+OPEN_BANKING_API_URL='https://api.your-provider.com/v1' \
+OPEN_BANKING_API_KEY='...' \
+OPEN_BANKING_REDIRECT_URI='https://your-host/#banking' npm run dev
+```
+
+Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the banking panel explains that the feature is not configured.
+
 ## Quality
 
 ```bash
@@ -124,7 +144,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Unit tests enforce 100% line, branch, and function coverage for trading, persistence, MongoDB repositories, and authentication. Playwright exercises desktop, Android, and iOS experiences and captures screenshots. Each pull request receives a comment linking to its screenshot artifact.
+Unit tests enforce 100% line, branch, and function coverage for trading, banking, persistence, MongoDB repositories, and authentication. Playwright exercises desktop, Android, and iOS experiences and captures screenshots. Each pull request receives a comment linking to its screenshot artifact.
 
 ## Deployment
 

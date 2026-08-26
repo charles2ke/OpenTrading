@@ -2,8 +2,10 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
-import { getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
+import { applyTransfer } from "../src/core/banking.js";
+import { createPortfolio, getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
+import { createBankService } from "../src/server/bank-service.js";
 import { createNewsService } from "../src/server/news-service.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
 import { createSecuritiesCache } from "../src/server/securities-cache.js";
@@ -31,10 +33,15 @@ const securityHeaders = {
 };
 const securitiesCache = createSecuritiesCache(instruments);
 const newsService = createNewsService(process.env);
+const bankService = createBankService(process.env);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
   response.end(JSON.stringify(value));
+}
+
+function isJsonContentType(contentType) {
+  return typeof contentType === "string" && contentType.split(";")[0].trim().toLowerCase() === "application/json";
 }
 
 async function auditActivity(auditRepository, event) {
@@ -120,15 +127,20 @@ async function handleAuth(request, response, pathname, requestUrl) {
   return response.end();
 }
 
+async function resolveOwnerId(request) {
+  const authService = await authServicePromise;
+  const user = await authService.current(request.headers.cookie);
+  const anonymousId = request.headers["x-client-id"];
+  if (!user && (typeof anonymousId !== "string" || !clientIdPattern.test(anonymousId))) return null;
+  return user?.id ?? `anonymous:${anonymousId}`;
+}
+
 async function handlePortfolioApi(request, response) {
   const dataStore = await dataStorePromise;
   if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
   const auditRepository = dataStore.audit;
-  const authService = await authServicePromise;
-  const user = await authService.current(request.headers.cookie);
-  const anonymousId = request.headers["x-client-id"];
-  if (!user && (typeof anonymousId !== "string" || !clientIdPattern.test(anonymousId))) return sendJson(response, 400, { error: "Invalid client ID." });
-  const ownerId = user?.id ?? `anonymous:${anonymousId}`;
+  const ownerId = await resolveOwnerId(request);
+  if (!ownerId) return sendJson(response, 400, { error: "Invalid client ID." });
   const repository = dataStore.portfolio;
   if (request.method === "GET") {
     const portfolio = await repository.find(ownerId);
@@ -202,6 +214,74 @@ function handleNewsApi(request, response, requestUrl) {
     .catch(() => sendJson(response, 502, { error: "Unable to fetch news right now." }));
 }
 
+async function handleBankingApi(request, response, pathname, requestUrl) {
+  if (!bankService.isConfigured()) return sendJson(response, 503, { error: "Bank connections are not configured." });
+  const dataStore = await dataStorePromise;
+  if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
+  const auditRepository = dataStore.audit;
+  const ownerId = await resolveOwnerId(request);
+  if (!ownerId) return sendJson(response, 400, { error: "Invalid client ID." });
+  const connections = dataStore.bank;
+
+  if (pathname === "/api/banking/institutions" && request.method === "GET") {
+    const institutions = await bankService.listInstitutions(requestUrl.searchParams.get("country") || "");
+    return sendJson(response, 200, { institutions });
+  }
+
+  if (pathname === "/api/banking/connections" && request.method === "GET") {
+    return sendJson(response, 200, { connections: await connections.list(ownerId) });
+  }
+
+  if (pathname === "/api/banking/connections" && request.method === "POST") {
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
+    const { institutionId } = await readJson(request);
+    const connection = await bankService.createConnection(institutionId);
+    await connections.link(ownerId, connection);
+    await auditActivity(auditRepository, { action: "bank.connection.create", actor: ownerId, status: "success", metadata: { institutionId: connection.institutionId, status: connection.status } });
+    return sendJson(response, 201, connection);
+  }
+
+  const accountsMatch = pathname.match(/^\/api\/banking\/connections\/([A-Za-z0-9_-]{1,64})\/accounts$/);
+  if (accountsMatch && request.method === "GET") {
+    const connectionId = accountsMatch[1];
+    if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
+    const accounts = await bankService.listAccounts(connectionId);
+    await auditActivity(auditRepository, { action: "bank.accounts.read", actor: ownerId, status: "success", metadata: { accounts: accounts.length } });
+    return sendJson(response, 200, { accounts });
+  }
+
+  const unlinkMatch = pathname.match(/^\/api\/banking\/connections\/([A-Za-z0-9_-]{1,64})$/);
+  if (unlinkMatch && request.method === "DELETE") {
+    const removed = await connections.unlink(ownerId, unlinkMatch[1]);
+    await auditActivity(auditRepository, { action: "bank.connection.delete", actor: ownerId, status: removed ? "success" : "failure", metadata: {} });
+    return sendJson(response, removed ? 204 : 404, removed ? null : { error: "Bank connection not found." });
+  }
+
+  if (pathname === "/api/banking/transfers" && request.method === "POST") {
+    if (!isJsonContentType(request.headers["content-type"])) return sendJson(response, 415, { error: "JSON content is required." });
+    const { connectionId, transfer } = await readJson(request);
+    if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
+    const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();
+    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer);
+    if (result.error) {
+      await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: result.error } });
+      return sendJson(response, 422, { error: result.error });
+    }
+    const settled = applyTransfer(portfolio, transfer);
+    await dataStore.portfolio.save(ownerId, settled.portfolio);
+    await auditActivity(auditRepository, {
+      action: "bank.transfer",
+      actor: ownerId,
+      status: "success",
+      metadata: { direction: transfer.direction, scheme: result.instruction.scheme, currency: result.instruction.amount.currency }
+    });
+    return sendJson(response, 202, { status: result.status, paymentId: result.paymentId, instruction: result.instruction, cash: settled.portfolio.cash });
+  }
+
+  response.setHeader("Allow", "GET, POST, DELETE");
+  return sendJson(response, 405, { error: "Method not allowed." });
+}
+
 createServer(async (request, response) => {
   let parsedUrl;
   let pathname;
@@ -233,7 +313,16 @@ createServer(async (request, response) => {
     try {
       return await handleAuditApi(request, response, parsedUrl);
     } catch {
-      return sendJson(response, 400, { error: "Invalid request." });
+      return sendJson(response, 500, { error: "Unable to read audit history right now." });
+    }
+  }
+  if (pathname.startsWith("/api/banking")) {
+    try {
+      return await handleBankingApi(request, response, pathname, parsedUrl);
+    } catch {
+      const dataStore = await dataStorePromise;
+      await auditActivity(dataStore?.audit, { action: "bank.request", actor: "anonymous", status: "failure", metadata: { pathname, method: request.method } });
+      return sendJson(response, 400, { error: "Invalid banking request." });
     }
   }
   if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);

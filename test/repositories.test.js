@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AuditRepository, AuthStore, connectDataStore, PortfolioRepository, scrubPii } from "../src/server/portfolio-repository.js";
+import { AuditRepository, AuthStore, BankConnectionRepository, connectDataStore, PortfolioRepository, scrubPii } from "../src/server/portfolio-repository.js";
 import { createPortfolio } from "../src/core/trading.js";
 
 function collection(overrides = {}) {
@@ -10,7 +10,8 @@ function collection(overrides = {}) {
     findOneAndDelete: async () => null,
     insertOne: async () => ({ acknowledged: true }),
     updateOne: async () => ({ acknowledged: true }),
-    deleteOne: async () => ({ acknowledged: true }),
+    deleteOne: async () => ({ deletedCount: 1 }),
+    find: () => ({ toArray: async () => [] }),
     ...overrides
   };
 }
@@ -211,7 +212,8 @@ test("connects one MongoDB client for all repositories", async () => {
     assert.ok(stores.portfolio instanceof PortfolioRepository);
     assert.ok(stores.auth instanceof AuthStore);
     assert.ok(stores.audit instanceof AuditRepository);
-    assert.deepEqual([...collections.keys()], ["portfolios", "authStates", "sessions", "auditEvents"]);
+    assert.ok(stores.bank instanceof BankConnectionRepository);
+    assert.deepEqual([...collections.keys()], ["portfolios", "authStates", "sessions", "auditEvents", "bankConnections"]);
   } finally {
     process.env.NODE_ENV = previousNodeEnv;
   }
@@ -233,6 +235,7 @@ test("connectDataStore uses privacy and retention environment overrides", async 
     assert.ok(stores.portfolio instanceof PortfolioRepository);
     assert.ok(stores.auth instanceof AuthStore);
     assert.ok(stores.audit instanceof AuditRepository);
+    assert.ok(stores.bank instanceof BankConnectionRepository);
   } finally {
     process.env.DATA_PRIVACY_KEY = previousPrivacyKey;
     process.env.AUDIT_RETENTION_DAYS = previousRetentionDays;
@@ -262,4 +265,52 @@ test("connectDataStore warns when privacy key is missing outside tests", async (
     process.env.DATA_PRIVACY_KEY = previousPrivacyKey;
     process.env.NODE_ENV = previousNodeEnv;
   }
+});
+
+test("bank connection repository stores only pseudonymous connection references", async () => {
+  const calls = [];
+  let listQuery;
+  const longConnectionId = "connection-".padEnd(80, "x");
+  const truncatedLongConnectionId = longConnectionId.slice(0, 64);
+  const data = collection({
+    createIndex: async (...args) => calls.push(["index", ...args]),
+    updateOne: async (...args) => calls.push(["update", ...args]),
+    find: (query, options) => {
+      listQuery = { query, options };
+      return { toArray: async () => [{ connectionId: "conn-1", institutionId: "commerzbank", status: "linked" }] };
+    },
+    findOne: async (query) => (query.connectionId === "conn-1" || query.connectionId === truncatedLongConnectionId
+      ? { connectionId: query.connectionId }
+      : null)
+  });
+  const repository = new BankConnectionRepository(data, "privacy-key");
+  await repository.initialize();
+  await repository.link("owner", { id: "conn-1", institutionId: "commerzbank", status: "linked" });
+  await repository.link("owner", { id: longConnectionId, status: "unknown" });
+
+  assert.deepEqual(calls[0].slice(1), [{ ownerKey: 1, connectionId: 1 }, { unique: true }]);
+  const [, linkedFilter, linkedUpdate] = calls[1];
+  assert.match(linkedFilter.ownerKey, /^owner:[a-f0-9]{64}$/);
+  assert.equal(linkedFilter.connectionId, "conn-1");
+  assert.equal(linkedUpdate.$set.status, "linked");
+  assert.equal(calls[2][1].connectionId, truncatedLongConnectionId);
+  assert.equal(calls[2][2].$set.status, "pending");
+  assert.equal(calls[2][2].$set.institutionId, "");
+
+  assert.deepEqual(await repository.list("owner"), [{ connectionId: "conn-1", institutionId: "commerzbank", status: "linked" }]);
+  assert.deepEqual(listQuery.options.projection, { _id: 0, connectionId: 1, institutionId: 1, status: 1 });
+  assert.equal(await repository.owns("owner", "conn-1"), true);
+  assert.equal(await repository.owns("owner", "conn-9"), false);
+  assert.equal(await repository.owns("owner", longConnectionId), true);
+  assert.equal(await repository.unlink("owner", "conn-1"), true);
+  assert.equal(await repository.unlink("owner", longConnectionId), true);
+  assert.equal(await new BankConnectionRepository(collection({ deleteOne: async () => ({ deletedCount: 0 }) })).unlink("owner", "conn-1"), false);
+});
+
+test("audit metadata redacts bank identifiers", () => {
+  assert.deepEqual(scrubPii({ iban: "DE89370400440532013000", bic: "COBADEFF", scheme: "SEPA" }), {
+    iban: "[REDACTED]",
+    bic: "[REDACTED]",
+    scheme: "SEPA"
+  });
 });

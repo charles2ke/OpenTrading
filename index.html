@@ -23,6 +23,7 @@
           <a class="nav-link" href="#markets"><span>↗</span>Markets</a>
           <a class="nav-link" href="#portfolio"><span>◫</span>Portfolio</a>
           <a class="nav-link" href="#trade"><span>⇄</span>Trade</a>
+          <a class="nav-link" href="#banking"><span>🏦</span>Banking</a>
           <a class="nav-link" href="#news"><span>📰</span>News</a>
           <a class="nav-link" href="./learn.html"><span>🎓</span>Learn</a>
           <a class="nav-link" href="./audit.html"><span>🛡</span>Audit</a>
@@ -90,6 +91,19 @@
             </section>
           </div>
 
+          <section class="panel" id="banking">
+            <div class="section-head">
+              <div><p class="eyebrow">BANK CONNECTIONS</p><h2>Banking</h2></div>
+              <div class="section-actions">
+                <button class="text-button" id="connect-bank" type="button">Connect a bank →</button>
+                <button class="text-button" id="open-transfer" type="button">Transfer money →</button>
+              </div>
+            </div>
+            <p class="banking-status" id="banking-status" role="status">Checking bank connections…</p>
+            <div id="bank-accounts" class="bank-accounts"></div>
+            <p id="empty-bank-accounts" class="empty-state" hidden>No bank connected yet. Connect any bank to see your account details.</p>
+          </section>
+
           <section class="panel news-panel" id="news">
             <div class="section-head"><div><p class="eyebrow">PORTFOLIO NEWS</p><h2>News feed</h2></div><span class="updated" id="news-status">Updated just now</span></div>
             <div id="news-feed" class="news-feed"></div>
@@ -111,6 +125,39 @@
         <p id="trade-error" class="form-error" role="alert"></p>
         <button class="primary-button full" value="default" type="submit">Review &amp; place order</button>
         <small class="disclaimer">Simulation only. Quotes are illustrative and delayed.</small>
+      </form>
+    </dialog>
+    <dialog id="bank-dialog" aria-labelledby="bank-title">
+      <form id="bank-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">OPEN BANKING</p><h2 id="bank-title">Connect a bank</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Close">×</button></div>
+        <label>Country<select id="bank-country" name="country"></select></label>
+        <label>Bank<select id="institution" name="institutionId"></select></label>
+        <p id="bank-error" class="form-error" role="alert"></p>
+        <button class="primary-button full" value="default" type="submit">Continue to bank consent</button>
+        <small class="disclaimer">Consent uses your bank&#39;s own secure login. OpenTrading never sees your banking credentials.</small>
+      </form>
+    </dialog>
+    <dialog id="transfer-dialog" aria-labelledby="transfer-title">
+      <form id="transfer-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">SECURE TRANSFER</p><h2 id="transfer-title">Transfer money</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Close">×</button></div>
+        <label>Bank connection<select id="transfer-connection" name="connectionId"></select></label>
+        <div class="form-row">
+          <label>Direction<select id="direction" name="direction"><option value="deposit">Deposit to OpenTrading</option><option value="withdrawal">Withdraw to bank</option></select></label>
+          <label>Currency<select id="transfer-currency" name="currency"></select></label>
+        </div>
+        <div class="form-row">
+          <label>Amount<input id="amount" name="amount" type="number" min="0.01" step="0.01" value="100" required></label>
+          <label>Account holder<input id="account-name" name="accountName" type="text" maxlength="140" autocomplete="name" required></label>
+        </div>
+        <div class="form-row">
+          <label>IBAN<input id="iban" name="iban" type="text" maxlength="42" autocomplete="off" spellcheck="false" required></label>
+          <label>BIC (SWIFT)<input id="bic" name="bic" type="text" maxlength="11" autocomplete="off" spellcheck="false" required></label>
+        </div>
+        <label>Reference<input id="transfer-reference" name="reference" type="text" maxlength="140" value="OpenTrading transfer"></label>
+        <div class="order-preview"><span>Settlement scheme</span><strong id="transfer-scheme">SWIFT</strong></div>
+        <p id="transfer-error" class="form-error" role="alert"></p>
+        <button class="primary-button full" value="default" type="submit">Review &amp; send transfer</button>
+        <small class="disclaimer">Payments are prepared as ISO 20022 pain.001 instructions and confirmed with strong customer authentication at your bank.</small>
       </form>
     </dialog>
     <div id="toast" role="status" aria-live="polite"></div>

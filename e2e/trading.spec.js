@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { stubBanking } from "./banking-fixtures.js";
 
 test("shows a responsive global market dashboard", async ({ page }, testInfo) => {
   await page.clock.setFixedTime(new Date("2026-01-05T09:00:00"));
@@ -16,7 +17,7 @@ test("places and persists a validated paper order", async ({ page }) => {
   await page.getByLabel("Shares").fill("2");
   await expect(page.getByText("Estimated total").locator("..").getByText("$464.28")).toBeVisible();
   await page.getByRole("button", { name: "Review & place order" }).click();
-  await expect(page.getByRole("status")).toHaveText("Bought 2 AAPL");
+  await expect(page.locator("#toast")).toHaveText("Bought 2 AAPL");
   await expect(page.getByText("Apple", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Apple", { exact: true })).toBeVisible();
@@ -68,7 +69,7 @@ test("keeps trading available when the search matches nothing", async ({ page })
   await page.getByRole("button", { name: "Place order" }).click();
   await page.getByLabel("Stock").selectOption("HSBA");
   await page.getByRole("button", { name: "Review & place order" }).click();
-  await expect(page.getByRole("status")).toHaveText("Bought 1 HSBA");
+  await expect(page.locator("#toast")).toHaveText("Bought 1 HSBA");
 });
 
 test("shows an unconfigured state for the news feed and fetches news for watched stocks", async ({ page }) => {
@@ -186,6 +187,46 @@ test("returns to the dashboard from the beginner's guide", async ({ page }) => {
   await page.goto("/learn.html");
   await page.getByRole("link", { name: "Back to dashboard" }).click();
   await expect(page.getByRole("heading", { name: /^Good (morning|afternoon|evening), Demo$/ })).toBeVisible();
+});
+
+test("explains when bank connections are not configured", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Banking" })).toBeVisible();
+  await expect(page.getByText("Bank connections are not configured on this deployment.")).toBeVisible();
+  await expect(page.getByText("No bank connected yet.")).toBeVisible();
+});
+
+test("connects a bank and lists masked account details", async ({ page }) => {
+  await stubBanking(page);
+  await page.goto("/");
+  await expect(page.getByText("1 bank connection · consent managed by your bank")).toBeVisible();
+  await expect(page.getByText("DE••••3000")).toBeVisible();
+  await expect(page.getByText("EUR 2500.00")).toBeVisible();
+
+  await page.getByRole("button", { name: "Connect a bank" }).click();
+  await page.locator("#bank-country").selectOption("DE");
+  await expect(page.locator("#institution")).toHaveValue("commerzbank");
+  await page.getByRole("button", { name: "Continue to bank consent" }).click();
+  await expect(page.locator("#toast")).toHaveText("Finish the consent at your bank to link the account");
+});
+
+test("rejects an invalid IBAN and sends a valid ISO 20022 transfer", async ({ page }) => {
+  await stubBanking(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Transfer money" }).click();
+  await page.locator("#account-name").fill("Ada Lovelace");
+  await page.locator("#iban").fill("DE00 0000");
+  await page.locator("#bic").fill("COBADEFFXXX");
+  await page.getByRole("button", { name: "Review & send transfer" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Enter a valid IBAN.");
+
+  await page.locator("#iban").fill("DE89 3704 0044 0532 0130 00");
+  await page.locator("#transfer-currency").selectOption("EUR");
+  await page.locator("#amount").fill("250.50");
+  await expect(page.getByText("Settlement scheme").locator("..").getByText("SEPA")).toBeVisible();
+  await page.getByRole("button", { name: "Review & send transfer" }).click();
+  await expect(page.locator("#toast")).toHaveText("Deposit sent via SEPA");
+  await expect(page.locator("#cash-value")).toHaveText("$100,250.50");
 });
 
 test.describe("audit log", () => {

@@ -1,4 +1,5 @@
 import { test } from "@playwright/test";
+import { stubBanking } from "./banking-fixtures.js";
 
 const directory = new URL("./screenshots/", import.meta.url).pathname;
 const shot = (name) => `${directory}${name}.png`;
@@ -72,5 +73,22 @@ test.describe("documentation screenshots", () => {
     await page.goto("/audit.html");
     await page.locator("#audit-rows tr").first().waitFor();
     await page.screenshot({ path: shot(`audit-log-${suffix}`), fullPage: true });
+  });
+
+  test("captures the banking panel and the transfer dialog", async ({ page }) => {
+    const suffix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
+    await stubBanking(page);
+    await page.goto("/");
+    await page.locator(".bank-account").first().waitFor();
+    await page.locator("#banking").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: shot(`banking-${suffix}`), fullPage: true });
+
+    await page.getByRole("button", { name: "Transfer money" }).click();
+    await page.locator("#account-name").fill("Ada Lovelace");
+    await page.locator("#iban").fill("DE89 3704 0044 0532 0130 00");
+    await page.locator("#bic").fill("COBADEFFXXX");
+    await page.locator("#transfer-currency").selectOption("EUR");
+    await page.locator("#amount").fill("250.50");
+    await page.screenshot({ path: shot(`transfer-${suffix}`) });
   });
 });

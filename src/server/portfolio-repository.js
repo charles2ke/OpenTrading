@@ -4,7 +4,7 @@ import { isPortfolio } from "../core/trading.js";
 
 const DEFAULT_PRIVACY_KEY = "opentrading-privacy";
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const SENSITIVE_KEY_PATTERN = /(cookie|token|secret|password|email|subject|clientId|sessionId|ownerId|identity|authorization|fullName|firstName|lastName|displayName|userName)/i;
+const SENSITIVE_KEY_PATTERN = /(cookie|token|secret|password|email|subject|clientId|sessionId|ownerId|identity|authorization|fullName|firstName|lastName|displayName|userName|iban|bic|accountNumber|sortCode|routingNumber)/i;
 
 function pseudonymizeIdentifier(value, privacyKey = DEFAULT_PRIVACY_KEY) {
   return createHmac("sha256", privacyKey).update(String(value)).digest("hex");
@@ -47,6 +47,56 @@ export class PortfolioRepository {
       { $set: { portfolio, updatedAt: now }, $setOnInsert: { createdAt: now } },
       { upsert: true }
     );
+  }
+}
+
+export class BankConnectionRepository {
+  constructor(collection, privacyKey = DEFAULT_PRIVACY_KEY) {
+    this.collection = collection;
+    this.privacyKey = privacyKey;
+  }
+
+  ownerKey(clientId) {
+    return `owner:${pseudonymizeIdentifier(clientId, this.privacyKey)}`;
+  }
+
+  async initialize() {
+    await this.collection.createIndex({ ownerKey: 1, connectionId: 1 }, { unique: true });
+  }
+
+  async link(clientId, connection) {
+    const now = new Date();
+    await this.collection.updateOne(
+      { ownerKey: this.ownerKey(clientId), connectionId: String(connection.id).slice(0, 64) },
+      {
+        $set: {
+          institutionId: String(connection.institutionId || "").slice(0, 64),
+          status: connection.status === "linked" ? "linked" : "pending",
+          updatedAt: now
+        },
+        $setOnInsert: { createdAt: now }
+      },
+      { upsert: true }
+    );
+  }
+
+  async list(clientId) {
+    return this.collection
+      .find({ ownerKey: this.ownerKey(clientId) }, { projection: { _id: 0, connectionId: 1, institutionId: 1, status: 1 } })
+      .toArray();
+  }
+
+  async owns(clientId, connectionId) {
+    const document = await this.collection.findOne(
+      { ownerKey: this.ownerKey(clientId), connectionId: String(connectionId).slice(0, 64) },
+      { projection: { _id: 0, connectionId: 1 } }
+    );
+    return Boolean(document);
+  }
+
+  async unlink(clientId, connectionId) {
+    const result = await this.collection.deleteOne({ ownerKey: this.ownerKey(clientId), connectionId: String(connectionId).slice(0, 64) });
+    return result.deletedCount > 0;
   }
 }
 
@@ -171,6 +221,7 @@ export async function connectDataStore(uri, databaseName = "opentrading", Client
   const portfolio = new PortfolioRepository(database.collection("portfolios"), privacyKey);
   const auth = new AuthStore(database.collection("authStates"), database.collection("sessions"), privacyKey);
   const audit = new AuditRepository(database.collection("auditEvents"), Number(process.env.AUDIT_RETENTION_DAYS || 365), privacyKey);
-  await Promise.all([portfolio.initialize(), auth.initialize(), audit.initialize()]);
-  return { portfolio, auth, audit };
+  const bank = new BankConnectionRepository(database.collection("bankConnections"), privacyKey);
+  await Promise.all([portfolio.initialize(), auth.initialize(), audit.initialize(), bank.initialize()]);
+  return { portfolio, auth, audit, bank };
 }
