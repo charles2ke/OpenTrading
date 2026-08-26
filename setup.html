@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
+    <meta name="description" content="Step-by-step setup guides for installing OpenTrading on the web, Windows, macOS, Android, and iOS, and for preparing your paper-trading account.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./src/styles.css">
+    <title>Setup — OpenTrading</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="./index.html" aria-label="OpenTrading home">
+          <span class="brand-mark">O</span><span>OpenTrading</span>
+        </a>
+        <nav>
+          <a class="nav-link" href="./index.html#overview"><span>⌂</span>Overview</a>
+          <a class="nav-link" href="./index.html#markets"><span>↗</span>Markets</a>
+          <a class="nav-link" href="./index.html#portfolio"><span>◫</span>Portfolio</a>
+          <a class="nav-link" href="./index.html#trade"><span>⇄</span>Trade</a>
+          <a class="nav-link" href="./banking.html"><span>🏦</span>Banking</a>
+          <a class="nav-link" href="./index.html#news"><span>📰</span>News</a>
+          <a class="nav-link" href="./learn.html"><span>🎓</span>Learn</a>
+          <a class="nav-link active" href="./setup.html"><span>⚙</span>Setup</a>
+          <a class="nav-link" href="./audit.html"><span>🛡</span>Audit</a>
+        </nav>
+        <div class="secure-card">
+          <span class="secure-icon">◆</span>
+          <div><strong>Paper trading</strong><small>No real money is used</small></div>
+        </div>
+      </aside>
+
+      <main id="main">
+        <header class="topbar">
+          <button class="menu-button" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+          <a class="text-button" href="./index.html">← Back to dashboard</a>
+        </header>
+
+        <div class="content">
+          <section class="panel guide-panel" id="setup">
+            <div class="section-head"><div><p class="eyebrow">GET STARTED</p><h2>Set up OpenTrading</h2></div></div>
+            <p class="guide-intro">Install OpenTrading on any device and prepare your paper-trading account. Every platform runs the same reviewed codebase, works offline after the first load, and keeps the demo portfolio on your device.</p>
+            <div class="guide-topics">
+              <details class="guide-topic" open>
+                <summary>Web browser</summary>
+                <p>Open <strong>https://charles2ke.github.io/OpenTrading/</strong> in any modern browser. Nothing needs to be installed to start paper trading.</p>
+                <ol>
+                  <li>Visit the site and wait for the dashboard to finish loading.</li>
+                  <li>Choose <strong>Sign in</strong> to connect a Google or Microsoft account, or keep using the demo profile.</li>
+                  <li>Reload once so the service worker caches the app for offline use.</li>
+                </ol>
+              </details>
+              <details class="guide-topic">
+                <summary>Windows</summary>
+                <ol>
+                  <li>Open the latest release on GitHub and pick the build for your chip: <strong>x64</strong> for Intel and AMD, <strong>arm64</strong> for Snapdragon devices such as Surface Pro.</li>
+                  <li>Run the <strong>.exe</strong> installer, or unpack the portable <strong>.zip</strong> if you cannot install software.</li>
+                  <li>Launch <strong>OpenTrading</strong> from the Start menu.</li>
+                </ol>
+                <p class="guide-example"><strong>Tip:</strong> The desktop app is the same interface as the website, so screenshots and steps in this guide apply everywhere.</p>
+              </details>
+              <details class="guide-topic">
+                <summary>macOS</summary>
+                <ol>
+                  <li>Download the <strong>.dmg</strong> (or <strong>.zip</strong>) for Apple silicon <strong>arm64</strong> or Intel <strong>x64</strong> from the latest release.</li>
+                  <li>Open the disk image and drag <strong>OpenTrading</strong> into your Applications folder.</li>
+                  <li>Start the app from Launchpad. To build it yourself instead, run <strong>npm run desktop:pack:mac</strong> on a Mac.</li>
+                </ol>
+              </details>
+              <details class="guide-topic">
+                <summary>Android</summary>
+                <ol>
+                  <li>Open the website in Chrome.</li>
+                  <li>Open the browser menu and choose <strong>Install app</strong>.</li>
+                  <li>Confirm the prompt, then start OpenTrading from your home screen like any other app.</li>
+                </ol>
+              </details>
+              <details class="guide-topic">
+                <summary>iOS and iPadOS</summary>
+                <ol>
+                  <li>Open the website in Safari.</li>
+                  <li>Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</li>
+                  <li>Confirm the name and tap <strong>Add</strong> to install the app icon.</li>
+                </ol>
+              </details>
+              <details class="guide-topic">
+                <summary>Prepare your account</summary>
+                <p>After installing, these steps make the dashboard useful on the first day.</p>
+                <ol>
+                  <li>Open the <a href="./banking.html">Banking page</a> and connect a bank through Open Banking consent to review masked account details.</li>
+                  <li>Use <strong>Transfer money</strong> to record a deposit with SEPA or SWIFT instructions, so simulated cash is available.</li>
+                  <li>Choose <strong>Trade</strong> in the navigation to place your first simulated buy order.</li>
+                  <li>Review what was recorded on the <a href="./audit.html">Audit page</a>, and download it as CSV or JSON if you want a copy.</li>
+                  <li>New to investing? Read the <a href="./learn.html">Learn page</a> before trading.</li>
+                </ol>
+              </details>
+              <details class="guide-topic">
+                <summary>Run it yourself</summary>
+                <p>Developers and self-hosters can run the same app locally with Node.js 22 or newer.</p>
+                <ol>
+                  <li>Install dependencies with <strong>npm install</strong>.</li>
+                  <li>Start the local build and server with <strong>npm run dev</strong>, then open <strong>http://127.0.0.1:4173</strong>.</li>
+                  <li>Run <strong>npm test</strong> to execute the unit and end-to-end suites.</li>
+                  <li>Optional services such as market news, bank connections, and sign-in stay disabled until their environment variables are configured, and the app explains this in the interface.</li>
+                </ol>
+              </details>
+            </div>
+            <p class="guide-footer">OpenTrading is a simulation. It never executes real trades, never moves real money, and does not provide investment advice.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="./src/setup.js"></script>
+  </body>
+</html>

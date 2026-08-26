@@ -117,7 +117,7 @@ td { padding: 13px 9px; border-top: 1px solid var(--border); font-size: 11px; }
 .guide-topic > summary:hover { background: #122138; border-radius: 8px; }
 .guide-topic > *:not(summary) { margin: 0 16px 13px; color: #c3cfdf; font-size: 12px; line-height: 1.65; }
 .guide-topic h3 { margin-top: 16px; color: var(--text); font-size: 12px; }
-.guide-topic ul { padding-left: 18px; }
+.guide-topic ul, .guide-topic ol { padding-left: 18px; }
 .guide-topic li { margin-bottom: 6px; }
 .guide-example { color: var(--muted) !important; }
 .audit-panel { margin-top: 16px; }

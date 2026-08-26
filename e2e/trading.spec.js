@@ -133,6 +133,23 @@ test("shows the beginner's guide on its own page", async ({ page }) => {
   await expect(shortSelling.getByText("theoretically unlimited loss")).toBeVisible();
 });
 
+test("explains how to install and set up OpenTrading on its own page", async ({ page }) => {
+  await page.goto("/");
+  const setup = page.getByRole("link", { name: "Setup" });
+  await expect(setup).toHaveAttribute("href", "./setup.html");
+  const menu = page.getByRole("button", { name: "Toggle navigation" });
+  if (await menu.isVisible()) await menu.click();
+  await setup.click();
+  await expect(page).toHaveURL(/setup\.html$/);
+  await expect(page.getByRole("heading", { name: "Set up OpenTrading" })).toBeVisible();
+  const windows = page.locator(".guide-topic").filter({ hasText: "Windows" });
+  await expect(windows.getByText("Snapdragon")).toBeHidden();
+  await windows.locator("summary").click();
+  await expect(windows.getByText("Snapdragon")).toBeVisible();
+  await page.getByRole("link", { name: "Back to dashboard" }).click();
+  await expect(page.getByRole("heading", { name: /^Good (morning|afternoon|evening), Demo$/ })).toBeVisible();
+});
+
 test("closes the mobile navigation after choosing a section", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
