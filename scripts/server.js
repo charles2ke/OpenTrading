@@ -313,7 +313,7 @@ createServer(async (request, response) => {
     try {
       return await handleAuditApi(request, response, parsedUrl);
     } catch {
-      return sendJson(response, 400, { error: "Invalid request." });
+      return sendJson(response, 500, { error: "Unable to read audit history right now." });
     }
   }
   if (pathname.startsWith("/api/banking")) {
