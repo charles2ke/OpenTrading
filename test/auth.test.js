@@ -81,7 +81,7 @@ test("completes login and creates a session", async () => {
   }), "https://app.example", providers, client());
   const result = await service.complete("google", new URL("https://app.example/auth/google/callback?state=state&code=code"));
   assert.match(result.sessionId, /^[\w-]{43}$/);
-  assert.deepEqual(result.user, { id: "google:123", name: "Ada", email: "ada@example.com", provider: "google" });
+  assert.deepEqual(result.user, { id: "google:123", name: "Ada", provider: "google" });
   assert.equal(saved[1].user.id, "google:123");
 });
 
@@ -108,7 +108,6 @@ test("normalizes fallback claims and manages current sessions", async () => {
   const service = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "1", email: "e".repeat(300) }));
   const result = await service.complete("google", new URL("https://app.example/callback?state=state"));
   assert.equal(result.user.name.length, 100);
-  assert.equal(result.user.email.length, 254);
   const anonymousClaims = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "2" }));
   const anonymousResult = await anonymousClaims.complete("google", new URL("https://app.example/callback?state=state"));
   assert.equal(anonymousResult.user.name, "Trader");

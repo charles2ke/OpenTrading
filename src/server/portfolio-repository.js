@@ -1,34 +1,72 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
+import { createHmac } from "node:crypto";
 import { isPortfolio } from "../core/trading.js";
 
+const DEFAULT_PRIVACY_KEY = process.env.DATA_PRIVACY_KEY || "opentrading-privacy";
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const SENSITIVE_KEY_PATTERN = /(cookie|token|secret|password|email|name|subject|client|session|owner|identity|authorization)/i;
+
+function pseudonymizeIdentifier(value, privacyKey = DEFAULT_PRIVACY_KEY) {
+  return createHmac("sha256", privacyKey).update(String(value)).digest("hex");
+}
+
+export function scrubPii(value, depth = 0) {
+  if (depth > 6) return "[REDACTED]";
+  if (Array.isArray(value)) return value.map((item) => scrubPii(item, depth + 1));
+  if (!value || typeof value !== "object") return typeof value === "string" && EMAIL_PATTERN.test(value) ? "[REDACTED]" : value;
+  return Object.fromEntries(Object.entries(value).map(([key, current]) => [
+    key,
+    SENSITIVE_KEY_PATTERN.test(key) ? "[REDACTED]" : scrubPii(current, depth + 1)
+  ]));
+}
+
 export class PortfolioRepository {
-  constructor(collection) {
+  constructor(collection, privacyKey = DEFAULT_PRIVACY_KEY) {
     this.collection = collection;
+    this.privacyKey = privacyKey;
+  }
+
+  ownerKey(clientId) {
+    return `owner:${pseudonymizeIdentifier(clientId, this.privacyKey)}`;
   }
 
   async initialize() {
-    await this.collection.createIndex({ clientId: 1 }, { unique: true });
+    await this.collection.createIndex({ ownerKey: 1 }, { unique: true });
   }
 
   async find(clientId) {
-    const document = await this.collection.findOne({ clientId }, { projection: { _id: 0, portfolio: 1 } });
+    const document = await this.collection.findOne({ ownerKey: this.ownerKey(clientId) }, { projection: { _id: 0, portfolio: 1 } });
     return document?.portfolio ?? null;
   }
 
   async save(clientId, portfolio) {
     if (!isPortfolio(portfolio)) throw new TypeError("Invalid portfolio.");
+    const now = new Date();
     await this.collection.updateOne(
-      { clientId },
-      { $set: { portfolio, updatedAt: new Date() } },
+      { ownerKey: this.ownerKey(clientId) },
+      { $set: { portfolio, updatedAt: now }, $setOnInsert: { createdAt: now } },
       { upsert: true }
     );
   }
 }
 
 export class AuthStore {
-  constructor(states, sessions) {
+  constructor(states, sessions, privacyKey = DEFAULT_PRIVACY_KEY) {
     this.states = states;
     this.sessions = sessions;
+    this.privacyKey = privacyKey;
+  }
+
+  pseudonymousUserId(value) {
+    return `user:${pseudonymizeIdentifier(value, this.privacyKey)}`;
+  }
+
+  sanitizeUser(user = {}) {
+    return {
+      id: this.pseudonymousUserId(user.id || "anonymous"),
+      name: String(user.name || "Trader").slice(0, 100),
+      provider: String(user.provider || "unknown").slice(0, 32)
+    };
   }
 
   async initialize() {
@@ -39,7 +77,13 @@ export class AuthStore {
   }
 
   async saveState(state, value) {
-    await this.states.insertOne({ _id: state, ...value });
+    await this.states.insertOne({
+      _id: state,
+      provider: value.provider,
+      codeVerifier: value.codeVerifier,
+      expiresAt: value.expiresAt,
+      createdAt: new Date()
+    });
   }
 
   async consumeState(state) {
@@ -47,7 +91,12 @@ export class AuthStore {
   }
 
   async saveSession(id, value) {
-    await this.sessions.insertOne({ _id: id, ...value });
+    await this.sessions.insertOne({
+      _id: id,
+      user: this.sanitizeUser(value.user),
+      expiresAt: value.expiresAt,
+      createdAt: new Date()
+    });
   }
 
   async findSession(id) {
@@ -59,7 +108,36 @@ export class AuthStore {
   }
 }
 
+export class AuditRepository {
+  constructor(collection, retentionDays = Number(process.env.AUDIT_RETENTION_DAYS || 365), privacyKey = DEFAULT_PRIVACY_KEY) {
+    this.collection = collection;
+    this.retentionDays = Math.max(1, Number.isFinite(retentionDays) ? retentionDays : 365);
+    this.privacyKey = privacyKey;
+  }
+
+  async initialize() {
+    await Promise.all([
+      this.collection.createIndex({ occurredAt: 1 }),
+      this.collection.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+    ]);
+  }
+
+  async record(event) {
+    const occurredAt = event.occurredAt instanceof Date ? event.occurredAt : new Date();
+    const expiresAt = new Date(occurredAt.getTime() + (this.retentionDays * 24 * 60 * 60 * 1000));
+    await this.collection.insertOne({
+      action: String(event.action || "unknown").slice(0, 120),
+      actor: event.actor ? `actor:${pseudonymizeIdentifier(event.actor, this.privacyKey)}` : "actor:anonymous",
+      status: event.status === "failure" ? "failure" : "success",
+      metadata: scrubPii(event.metadata || {}),
+      occurredAt,
+      expiresAt
+    });
+  }
+}
+
 export async function connectDataStore(uri, databaseName = "opentrading", Client = MongoClient) {
+  const privacyKey = process.env.DATA_PRIVACY_KEY || "opentrading-privacy";
   const client = new Client(uri, {
     serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
     maxPoolSize: 10,
@@ -69,8 +147,9 @@ export async function connectDataStore(uri, databaseName = "opentrading", Client
   });
   await client.connect();
   const database = client.db(databaseName);
-  const portfolio = new PortfolioRepository(database.collection("portfolios"));
-  const auth = new AuthStore(database.collection("authStates"), database.collection("sessions"));
-  await Promise.all([portfolio.initialize(), auth.initialize()]);
-  return { portfolio, auth };
+  const portfolio = new PortfolioRepository(database.collection("portfolios"), privacyKey);
+  const auth = new AuthStore(database.collection("authStates"), database.collection("sessions"), privacyKey);
+  const audit = new AuditRepository(database.collection("auditEvents"), Number(process.env.AUDIT_RETENTION_DAYS || 365), privacyKey);
+  await Promise.all([portfolio.initialize(), auth.initialize(), audit.initialize()]);
+  return { portfolio, auth, audit };
 }

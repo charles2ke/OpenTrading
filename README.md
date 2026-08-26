@@ -46,6 +46,7 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 ```
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
+MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
 
 ### Authentication
 

@@ -35,6 +35,13 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
+async function auditActivity(auditRepository, event) {
+  if (!auditRepository) return;
+  try {
+    await auditRepository.record(event);
+  } catch {}
+}
+
 async function readJson(request) {
   const chunks = [];
   let size = 0;
@@ -47,14 +54,29 @@ async function readJson(request) {
 }
 
 async function handleAuth(request, response, pathname, requestUrl) {
+  const dataStore = await dataStorePromise;
+  const auditRepository = dataStore?.audit;
   const authService = await authServicePromise;
   if (!authService) return sendJson(response, 503, { error: "Authentication is unavailable." });
   if (pathname === "/auth/session" && request.method === "GET") {
     const user = await authService.current(request.headers.cookie);
+    await auditActivity(auditRepository, {
+      action: "auth.session.read",
+      actor: user?.id || "anonymous",
+      status: "success",
+      metadata: { authenticated: Boolean(user) }
+    });
     return sendJson(response, user ? 200 : 401, user ?? { error: "Not signed in." });
   }
   if (pathname === "/auth/logout" && request.method === "POST") {
+    const user = await authService.current(request.headers.cookie);
     await authService.logout(request.headers.cookie);
+    await auditActivity(auditRepository, {
+      action: "auth.logout",
+      actor: user?.id || "anonymous",
+      status: "success",
+      metadata: {}
+    });
     response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie("", 0), Location: "./" });
     return response.end();
   }
@@ -63,10 +85,22 @@ async function handleAuth(request, response, pathname, requestUrl) {
   const [, provider, callback] = match;
   if (!callback) {
     const redirect = await authService.begin(provider);
+    await auditActivity(auditRepository, {
+      action: "auth.login.begin",
+      actor: "anonymous",
+      status: "success",
+      metadata: { provider }
+    });
     response.writeHead(302, { ...securityHeaders, Location: redirect.href, "Cache-Control": "no-store" });
     return response.end();
   }
   const result = await authService.complete(provider, requestUrl);
+  await auditActivity(auditRepository, {
+    action: "auth.login.complete",
+    actor: result.user.id,
+    status: "success",
+    metadata: { provider }
+  });
   response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie(result.sessionId), Location: "../../" });
   return response.end();
 }
@@ -74,6 +108,7 @@ async function handleAuth(request, response, pathname, requestUrl) {
 async function handlePortfolioApi(request, response) {
   const dataStore = await dataStorePromise;
   if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
+  const auditRepository = dataStore.audit;
   const authService = await authServicePromise;
   const user = await authService.current(request.headers.cookie);
   const anonymousId = request.headers["x-client-id"];
@@ -82,6 +117,12 @@ async function handlePortfolioApi(request, response) {
   const repository = dataStore.portfolio;
   if (request.method === "GET") {
     const portfolio = await repository.find(ownerId);
+    await auditActivity(auditRepository, {
+      action: "portfolio.read",
+      actor: ownerId,
+      status: "success",
+      metadata: { found: Boolean(portfolio) }
+    });
     return sendJson(response, portfolio ? 200 : 404, portfolio ?? { error: "Portfolio not found." });
   }
   if (request.method === "PUT") {
@@ -89,6 +130,12 @@ async function handlePortfolioApi(request, response) {
     const portfolio = await readJson(request);
     if (!isPortfolio(portfolio)) return sendJson(response, 422, { error: "Invalid portfolio." });
     await repository.save(ownerId, portfolio);
+    await auditActivity(auditRepository, {
+      action: "portfolio.write",
+      actor: ownerId,
+      status: "success",
+      metadata: { symbols: Object.keys(portfolio.positions).length }
+    });
     return sendJson(response, 204, null);
   }
   response.setHeader("Allow", "GET, PUT");
@@ -118,6 +165,8 @@ createServer(async (request, response) => {
       try {
         return await handleAuth(request, response, pathname, parsedUrl);
       } catch {
+        const dataStore = await dataStorePromise;
+        await auditActivity(dataStore?.audit, { action: "auth.request", actor: "anonymous", status: "failure", metadata: { pathname, method: request.method } });
         return sendJson(response, 400, { error: "Authentication failed." });
       }
     }
@@ -128,6 +177,8 @@ createServer(async (request, response) => {
     try {
       return await handlePortfolioApi(request, response);
     } catch {
+      const dataStore = await dataStorePromise;
+      await auditActivity(dataStore?.audit, { action: "portfolio.request", actor: "anonymous", status: "failure", metadata: { method: request.method } });
       return sendJson(response, 400, { error: "Invalid request." });
     }
   }

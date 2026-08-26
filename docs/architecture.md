@@ -53,7 +53,7 @@ flowchart LR
   Cache -->|GET /api/securities/sedol/{value}| SedolEndpoint[Lookup by SEDOL]
 ```
 
-When `MONGODB_URI` is configured, `src/server/portfolio-repository.js` creates a MongoDB-backed portfolio repository and authentication store. Portfolios are keyed by a signed-in user's provider subject or, for anonymous usage, a browser-generated UUID. The database also holds short-lived OIDC states and sessions; TTL indexes remove expired records.
+When `MONGODB_URI` is configured, `src/server/portfolio-repository.js` creates MongoDB-backed portfolio, authentication, and audit stores. Portfolio owners and audit actors are persisted as pseudonymous keyed hashes rather than raw identifiers, session records keep only minimal display data, and audit metadata is scrubbed for PII before insert. The database also holds short-lived OIDC states and sessions, plus expiring audit events; TTL indexes remove expired records.
 
 MongoDB and authentication are optional. Without a database connection, portfolio and authentication endpoints return `503`, while client-side paper trading and local storage continue to work.
 
