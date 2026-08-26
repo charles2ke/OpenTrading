@@ -31,6 +31,16 @@ npm run dev
 
 Open <http://127.0.0.1:4173>.
 
+### MongoDB
+
+OpenTrading uses MongoDB for server-side portfolio persistence and falls back safely to on-device storage when the database is unavailable. Create a least-privilege database user, keep its connection string server-side, and start with:
+
+```bash
+MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run dev
+```
+
+Never expose `MONGODB_URI` to browser code or commit it to the repository.
+
 ## Quality
 
 ```bash

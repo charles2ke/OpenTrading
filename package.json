@@ -14,12 +14,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://localhost:26831/charles2ke/OpenTrading"
+    "url": "https://github.com/charles2ke/OpenTrading.git"
   },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
     "@playwright/test": "^1.62.1"
+  },
+  "dependencies": {
+    "mongodb": "^7.6.0"
   }
 }

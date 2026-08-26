@@ -1,5 +1,5 @@
 import { executeOrder, getInstrument, indices, instruments, summarizePortfolio } from "./core/trading.js";
-import { loadPortfolio, savePortfolio } from "./core/storage.js";
+import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
@@ -74,7 +74,8 @@ form.addEventListener("input", updateOrderTotal);
 form.addEventListener("submit", (event) => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
-  const order = Object.fromEntries(new FormData(form));
+  const values = Object.fromEntries(new FormData(form));
+  const order = { ...values, quantity: Number(values.quantity) };
   const result = executeOrder(portfolio, order);
   if (result.error) {
     byId("trade-error").textContent = result.error;
@@ -82,6 +83,7 @@ form.addEventListener("submit", (event) => {
   }
   portfolio = result.portfolio;
   savePortfolio(localStorage, portfolio);
+  saveRemotePortfolio(localStorage, portfolio, fetch).catch(() => {});
   render();
   dialog.close();
   const toast = byId("toast");
@@ -111,6 +113,12 @@ byId("install").addEventListener("click", async () => {
 
 renderMarkets();
 render();
+loadRemotePortfolio(localStorage, fetch).then((remotePortfolio) => {
+  if (!remotePortfolio) return;
+  portfolio = remotePortfolio;
+  savePortfolio(localStorage, portfolio);
+  render();
+}).catch(() => {});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
