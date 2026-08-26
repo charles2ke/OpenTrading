@@ -78,9 +78,8 @@ test.describe("documentation screenshots", () => {
   test("captures the banking panel and the transfer dialog", async ({ page }) => {
     const suffix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
     await stubBanking(page);
-    await page.goto("/");
+    await page.goto("/banking.html");
     await page.locator(".bank-account").first().waitFor();
-    await page.locator("#banking").scrollIntoViewIfNeeded();
     await page.screenshot({ path: shot(`banking-${suffix}`), fullPage: true });
 
     await page.getByRole("button", { name: "Transfer money" }).click();

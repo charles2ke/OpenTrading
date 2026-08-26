@@ -1,7 +1,6 @@
 import { executeOrder, getInstrument, instruments, searchIndices, searchInstruments, summarizePortfolio } from "./core/trading.js";
 import { watchedSymbols } from "./core/news.js";
 import { initNavigation } from "./navigation.js";
-import { initBanking } from "./banking-ui.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -209,16 +208,6 @@ byId("search").addEventListener("input", (event) => {
 });
 
 initNavigation();
-initBanking({
-  getPortfolio: () => portfolio,
-  showToast,
-  onTransferred: (cash) => {
-    if (!Number.isFinite(cash)) return;
-    portfolio = { ...portfolio, cash };
-    savePortfolio(localStorage, portfolio);
-    render();
-  }
-});
 
 const sections = [...document.querySelectorAll(".nav-link")]
   .filter((link) => link.getAttribute("href").startsWith("#"))

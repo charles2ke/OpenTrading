@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
+    <meta name="description" content="Connect a bank through Open Banking consent and move money securely with ISO 20022 transfers.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./src/styles.css">
+    <title>Banking — OpenTrading</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="./index.html" aria-label="OpenTrading home">
+          <span class="brand-mark">O</span><span>OpenTrading</span>
+        </a>
+        <nav>
+          <a class="nav-link" href="./index.html#overview"><span>⌂</span>Overview</a>
+          <a class="nav-link" href="./index.html#markets"><span>↗</span>Markets</a>
+          <a class="nav-link" href="./index.html#portfolio"><span>◫</span>Portfolio</a>
+          <a class="nav-link" href="./index.html#trade"><span>⇄</span>Trade</a>
+          <a class="nav-link active" href="./banking.html"><span>🏦</span>Banking</a>
+          <a class="nav-link" href="./index.html#news"><span>📰</span>News</a>
+          <a class="nav-link" href="./learn.html"><span>🎓</span>Learn</a>
+          <a class="nav-link" href="./audit.html"><span>🛡</span>Audit</a>
+        </nav>
+        <div class="secure-card">
+          <span class="secure-icon">◆</span>
+          <div><strong>Paper trading</strong><small>No real money is used</small></div>
+        </div>
+      </aside>
+
+      <main id="main">
+        <header class="topbar">
+          <button class="menu-button" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+          <a class="text-button" href="./index.html">← Back to dashboard</a>
+        </header>
+
+        <div class="content">
+          <section class="metrics" aria-label="Cash summary">
+            <article class="metric-card">
+              <div class="metric-head"><span>Available cash</span><span class="metric-icon green">$</span></div>
+              <strong id="cash-value">$0.00</strong><small>Ready to invest</small>
+            </article>
+          </section>
+
+          <section class="panel" id="banking">
+            <div class="section-head">
+              <div><p class="eyebrow">BANK CONNECTIONS</p><h2>Banking</h2></div>
+              <div class="section-actions">
+                <button class="text-button" id="connect-bank" type="button">Connect a bank →</button>
+                <button class="text-button" id="open-transfer" type="button">Transfer money →</button>
+              </div>
+            </div>
+            <p class="banking-status" id="banking-status" role="status">Checking bank connections…</p>
+            <div id="bank-accounts" class="bank-accounts"></div>
+            <p id="empty-bank-accounts" class="empty-state" hidden>No bank connected yet. Connect any bank to see your account details.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="bank-dialog" aria-labelledby="bank-title">
+      <form id="bank-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">OPEN BANKING</p><h2 id="bank-title">Connect a bank</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Close">×</button></div>
+        <label>Country<select id="bank-country" name="country"></select></label>
+        <label>Bank<select id="institution" name="institutionId"></select></label>
+        <p id="bank-error" class="form-error" role="alert"></p>
+        <button class="primary-button full" value="default" type="submit">Continue to bank consent</button>
+        <small class="disclaimer">Consent uses your bank&#39;s own secure login. OpenTrading never sees your banking credentials.</small>
+      </form>
+    </dialog>
+    <dialog id="transfer-dialog" aria-labelledby="transfer-title">
+      <form id="transfer-form" method="dialog">
+        <div class="dialog-head"><div><p class="eyebrow">SECURE TRANSFER</p><h2 id="transfer-title">Transfer money</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Close">×</button></div>
+        <label>Bank connection<select id="transfer-connection" name="connectionId"></select></label>
+        <div class="form-row">
+          <label>Direction<select id="direction" name="direction"><option value="deposit">Deposit to OpenTrading</option><option value="withdrawal">Withdraw to bank</option></select></label>
+          <label>Currency<select id="transfer-currency" name="currency"></select></label>
+        </div>
+        <div class="form-row">
+          <label>Amount<input id="amount" name="amount" type="number" min="0.01" step="0.01" value="100" required></label>
+          <label>Account holder<input id="account-name" name="accountName" type="text" maxlength="140" autocomplete="name" required></label>
+        </div>
+        <div class="form-row">
+          <label>IBAN<input id="iban" name="iban" type="text" maxlength="42" autocomplete="off" spellcheck="false" required></label>
+          <label>BIC (SWIFT)<input id="bic" name="bic" type="text" maxlength="11" autocomplete="off" spellcheck="false" required></label>
+        </div>
+        <label>Reference<input id="transfer-reference" name="reference" type="text" maxlength="140" value="OpenTrading transfer"></label>
+        <div class="order-preview"><span>Settlement scheme</span><strong id="transfer-scheme">SWIFT</strong></div>
+        <p id="transfer-error" class="form-error" role="alert"></p>
+        <button class="primary-button full" value="default" type="submit">Review &amp; send transfer</button>
+        <small class="disclaimer">Payments are prepared as ISO 20022 pain.001 instructions and confirmed with strong customer authentication at your bank.</small>
+      </form>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/banking.js"></script>
+  </body>
+</html>

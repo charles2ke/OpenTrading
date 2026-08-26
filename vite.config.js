@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, "index.html"),
         learn: resolve(import.meta.dirname, "learn.html"),
+        banking: resolve(import.meta.dirname, "banking.html"),
         audit: resolve(import.meta.dirname, "audit.html")
       }
     }
