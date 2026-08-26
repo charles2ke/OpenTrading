@@ -13,6 +13,7 @@ See the [architecture documentation](docs/architecture.md) for the client, serve
 ## Apps
 
 - **Website:** responsive desktop and mobile experience.
+- **Windows:** download the `.exe` installer (or portable `.zip`) for your chip from the latest release — both Intel/AMD `x64` and `arm64` (Snapdragon, Surface Pro) builds are published.
 - **Android:** open the website in Chrome and choose **Install app**.
 - **iOS:** open the website in Safari, choose **Share**, then **Add to Home Screen**.
 
@@ -134,6 +135,17 @@ OPEN_BANKING_REDIRECT_URI='https://your-host/banking.html' npm run dev
 
 Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured.
 
+### Windows desktop app
+
+The desktop app is an Electron shell (`desktop/main.cjs`) around the same reviewed build. It serves the build over a secure `app://` scheme with context isolation, a sandboxed renderer, no Node integration, and navigation restricted to the packaged origin.
+
+```bash
+npm run desktop        # build the web assets and run the app locally
+npm run desktop:pack   # build Windows x64 and arm64 installers into release/
+```
+
+Packaging Windows installers must run on a Windows machine or runner.
+
 ## Quality
 
 ```bash
@@ -148,7 +160,7 @@ Unit tests enforce 100% line, branch, and function coverage for trading, banking
 
 ## Deployment
 
-Every merge to `main` builds and publishes the website to GitHub Pages. Successful merged pull requests also update the release status below.
+Every merge to `main` builds and publishes the website to GitHub Pages. The `Build Windows desktop app` workflow builds `x64` and `arm64` Windows installers on every push and pull request and uploads them as artifacts; pushing a `v*` tag attaches them to a GitHub release. Successful merged pull requests also update the release status below.
 
 <!-- release-status:start -->
 No pull request has been merged yet.

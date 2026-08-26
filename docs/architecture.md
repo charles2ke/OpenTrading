@@ -107,6 +107,12 @@ The Node server and page define a restrictive same-origin Content Security Polic
 
 Vite builds the browser assets into `dist/`. `npm run dev` first builds those assets and then starts the Node server on `127.0.0.1:4173`. GitHub Pages deployment publishes the static build for the PWA; a deployment that needs remote portfolios or sign-in must also run the Node server with MongoDB and the relevant OIDC configuration.
 
+## Windows desktop app
+
+`desktop/main.cjs` is an Electron main process that serves the same `dist/` build over a privileged, secure `app://` scheme so the shipped Content Security Policy still applies. The renderer runs with context isolation, sandboxing, and no Node integration; requests are confined to `dist/`, navigation is restricted to the packaged origin, and external `https:` links open in the system browser.
+
+`electron-builder.yml` packages that shell into NSIS installers and portable ZIP archives for both Windows `x64` and `arm64`. The `Build Windows desktop app` workflow (`.github/workflows/desktop.yml`) runs on `windows-latest`, lints, runs the unit tests, builds the web assets, packages each architecture in a matrix, and uploads the installers as artifacts. Pushing a `v*` tag additionally attaches the installers to a GitHub release.
+
 ## Quality boundaries
 
 Unit tests cover trading, banking, local storage, repositories, and authentication. Playwright covers the desktop, Android, and iOS dashboard flows. The pull-request workflow runs linting, unit tests, builds the application, runs Playwright, and uploads the captured screenshots as a PR artifact.
