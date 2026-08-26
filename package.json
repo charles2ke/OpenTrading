@@ -1,7 +1,7 @@
 {
   "name": "opentrading",
   "version": "1.0.0",
-  "description": "Secure, installable paper-trading platform for web, Android, and iOS",
+  "description": "Secure, installable paper-trading platform for web, macOS, Android, and iOS",
   "type": "module",
   "private": true,
   "scripts": {
@@ -10,18 +10,22 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 test/*.test.js",
     "test:e2e": "playwright test",
-    "lint": "node --check src/app.js && node --check src/banking.js && node --check src/banking-ui.js && node --check src/core/trading.js && node --check src/core/audit.js && node --check src/audit.js && node --check src/core/news.js && node --check src/core/banking.js && node --check src/server/news-service.js && node --check src/server/bank-service.js && node --check scripts/server.js"
+    "lint": "node --check src/app.js && node --check src/banking.js && node --check src/banking-ui.js && node --check src/core/trading.js && node --check src/core/audit.js && node --check src/audit.js && node --check src/core/news.js && node --check src/core/banking.js && node --check src/server/news-service.js && node --check src/server/bank-service.js && node --check scripts/server.js && node --check electron/main.cjs",
+    "app:start": "npm run build && electron .",
+    "app:mac": "npm run build && electron-builder --mac --publish never"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/charles2ke/OpenTrading.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "OpenTrading contributors",
   "license": "Apache-2.0",
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@vitejs/plugin-react": "^6.1.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "vite": "^8.2.2"
   },
   "dependencies": {
@@ -29,5 +33,41 @@
     "openid-client": "^6.8.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.charles2ke.opentrading",
+    "productName": "OpenTrading",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "electron/main.cjs",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "darkModeSupport": true
+    }
   }
 }
