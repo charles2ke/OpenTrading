@@ -1,5 +1,6 @@
 import { executeOrder, getInstrument, indices, instruments, summarizePortfolio } from "./core/trading.js";
 import { watchedSymbols } from "./core/news.js";
+import { initNavigation } from "./navigation.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -182,29 +183,10 @@ byId("search").addEventListener("input", (event) => {
   byId("empty-watchlist").hidden = rows.some((row) => !row.hidden);
 });
 
-const sidebar = document.querySelector(".sidebar");
-const menuButton = document.querySelector(".menu-button");
-
-function setNavigationOpen(open) {
-  sidebar.classList.toggle("open", open);
-  menuButton.setAttribute("aria-expanded", String(open));
-}
-
-menuButton.addEventListener("click", () => setNavigationOpen(!sidebar.classList.contains("open")));
-sidebar.addEventListener("click", (event) => {
-  if (event.target.closest(".nav-link")) setNavigationOpen(false);
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && sidebar.classList.contains("open")) {
-    setNavigationOpen(false);
-    menuButton.focus();
-  }
-});
-document.querySelector(".content").addEventListener("click", () => {
-  if (sidebar.classList.contains("open")) setNavigationOpen(false);
-});
+initNavigation();
 
 const sections = [...document.querySelectorAll(".nav-link")]
+  .filter((link) => link.getAttribute("href").startsWith("#"))
   .map((link) => ({ link, section: document.querySelector(link.getAttribute("href")) }))
   .filter(({ section }) => section);
 

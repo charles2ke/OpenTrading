@@ -63,9 +63,15 @@ test("offers Google and Microsoft authentication", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Continue with Microsoft" })).toBeVisible();
 });
 
-test("shows the beginner's guide on the website", async ({ page }) => {
+test("shows the beginner's guide on its own page", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Learn" })).toHaveAttribute("href", "#learn");
+  await expect(page.getByRole("heading", { name: "Investor concepts for beginners" })).toBeHidden();
+  const learn = page.getByRole("link", { name: "Learn" });
+  await expect(learn).toHaveAttribute("href", "./learn.html");
+  const menu = page.getByRole("button", { name: "Toggle navigation" });
+  if (await menu.isVisible()) await menu.click();
+  await learn.click();
+  await expect(page).toHaveURL(/learn\.html$/);
   await expect(page.getByRole("heading", { name: "Investor concepts for beginners" })).toBeVisible();
   await expect(page.getByText("A stock represents ownership in a company.")).toBeVisible();
   const shortSelling = page.locator(".guide-topic").filter({ hasText: "Short selling" });
@@ -122,4 +128,10 @@ test("greets the visitor for the current time of day", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-01-05T20:00:00"));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Good evening, Demo" })).toBeVisible();
+});
+
+test("returns to the dashboard from the beginner's guide", async ({ page }) => {
+  await page.goto("/learn.html");
+  await page.getByRole("link", { name: "Back to dashboard" }).click();
+  await expect(page.getByRole("heading", { name: /^Good (morning|afternoon|evening), Demo$/ })).toBeVisible();
 });

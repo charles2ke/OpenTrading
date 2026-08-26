@@ -37,5 +37,8 @@ test.describe("documentation screenshots", () => {
 
     await page.getByLabel("Search markets").fill("Tesla");
     await page.screenshot({ path: shot(`market-search-${suffix}`), fullPage: true });
+
+    await page.goto("/learn.html");
+    await page.screenshot({ path: shot(`beginners-guide-${suffix}`), fullPage: true });
   });
 });
