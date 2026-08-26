@@ -44,6 +44,31 @@ async function readJson(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+async function handleAuth(request, response, pathname, requestUrl) {
+  const authService = await authServicePromise;
+  if (!authService) return sendJson(response, 503, { error: "Authentication is unavailable." });
+  if (pathname === "/auth/session" && request.method === "GET") {
+    const user = await authService.current(request.headers.cookie);
+    return sendJson(response, user ? 200 : 401, user ?? { error: "Not signed in." });
+  }
+  if (pathname === "/auth/logout" && request.method === "POST") {
+    await authService.logout(request.headers.cookie);
+    response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie("", 0), Location: "./" });
+    return response.end();
+  }
+  const match = pathname.match(/^\/auth\/(google|microsoft)(\/callback)?$/);
+  if (!match || request.method !== "GET") return sendJson(response, 404, { error: "Authentication route not found." });
+  const [, provider, callback] = match;
+  if (!callback) {
+    const redirect = await authService.begin(provider);
+    response.writeHead(302, { ...securityHeaders, Location: redirect.href, "Cache-Control": "no-store" });
+    return response.end();
+  }
+  const result = await authService.complete(provider, requestUrl);
+  response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie(result.sessionId), Location: "../../" });
+  return response.end();
+}
+
 async function handlePortfolioApi(request, response) {
   const dataStore = await dataStorePromise;
   if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
@@ -63,31 +88,6 @@ async function handlePortfolioApi(request, response) {
     if (!isPortfolio(portfolio)) return sendJson(response, 422, { error: "Invalid portfolio." });
     await repository.save(ownerId, portfolio);
     return sendJson(response, 204, null);
-  }
-
-  async function handleAuth(request, response, pathname, requestUrl) {
-    const authService = await authServicePromise;
-    if (!authService) return sendJson(response, 503, { error: "Authentication is unavailable." });
-    if (pathname === "/auth/session" && request.method === "GET") {
-      const user = await authService.current(request.headers.cookie);
-      return sendJson(response, user ? 200 : 401, user ?? { error: "Not signed in." });
-    }
-    if (pathname === "/auth/logout" && request.method === "POST") {
-      await authService.logout(request.headers.cookie);
-      response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie("", 0), Location: "./" });
-      return response.end();
-    }
-    const match = pathname.match(/^\/auth\/(google|microsoft)(\/callback)?$/);
-    if (!match || request.method !== "GET") return sendJson(response, 404, { error: "Authentication route not found." });
-    const [, provider, callback] = match;
-    if (!callback) {
-      const redirect = await authService.begin(provider);
-      response.writeHead(302, { ...securityHeaders, Location: redirect.href, "Cache-Control": "no-store" });
-      return response.end();
-    }
-    const result = await authService.complete(provider, requestUrl);
-    response.writeHead(303, { ...securityHeaders, "Set-Cookie": sessionCookie(result.sessionId), Location: "../../" });
-    return response.end();
   }
   response.setHeader("Allow", "GET, PUT");
   return sendJson(response, 405, { error: "Method not allowed." });

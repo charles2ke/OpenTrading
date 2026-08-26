@@ -37,6 +37,10 @@ test("filters market movers", async ({ page }) => {
 });
 
 test("offers Google and Microsoft authentication", async ({ page }) => {
+  const session = await page.request.get("/auth/session");
+  expect(session.status()).toBe(503);
+  await expect(session.json()).resolves.toEqual({ error: "Authentication is unavailable." });
+
   await page.goto("/");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
