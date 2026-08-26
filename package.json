@@ -23,6 +23,7 @@
     "@playwright/test": "^1.62.1"
   },
   "dependencies": {
-    "mongodb": "^7.6.0"
+    "mongodb": "^7.6.0",
+    "openid-client": "^6.8.7"
   }
 }
