@@ -256,7 +256,7 @@ test.describe("audit log", () => {
 
     await page.locator("#audit-status-filter").selectOption("failure");
     await expect(page.getByRole("row")).toHaveCount(2);
-    await expect(page.getByText("portfolio.write")).toBeVisible();
+    await expect(page.locator("#audit-rows .audit-status.failure")).toHaveText("failure");
 
     await page.locator("#audit-status-filter").selectOption("all");
     await page.locator("#audit-search").fill("google");
