@@ -84,7 +84,7 @@ export class AuthService {
     const sessionId = randomBytes(32).toString("base64url");
     const user = {
       id: `${provider}:${claims.sub}`,
-      name: String(claims.name || claims.email || "Trader").slice(0, 100),
+      name: String(claims.name || "Trader").slice(0, 100),
       provider
     };
     await this.store.saveSession(sessionId, { user, expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS) });

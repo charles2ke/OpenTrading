@@ -105,10 +105,10 @@ test("normalizes fallback claims and manages current sessions", async () => {
     findSession: async (id) => id === "valid" ? { user: { id: "google:1" } } : null,
     deleteSession: async (id) => { deleted = id; }
   });
-  const service = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "1", email: "e".repeat(300) }));
+  const service = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "1", name: "A".repeat(300), email: "e".repeat(300) }));
   const result = await service.complete("google", new URL("https://app.example/callback?state=state"));
   assert.equal(result.user.name.length, 100);
-  const anonymousClaims = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "2" }));
+  const anonymousClaims = new AuthService(fakeStore, "https://app.example", providers, client({ sub: "2", email: "ada@example.com" }));
   const anonymousResult = await anonymousClaims.complete("google", new URL("https://app.example/callback?state=state"));
   assert.equal(anonymousResult.user.name, "Trader");
   assert.equal(await service.current(), null);
