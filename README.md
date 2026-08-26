@@ -13,9 +13,10 @@ See the [architecture documentation](docs/architecture.md) for the client, serve
 ## Apps
 
 - **Website:** responsive desktop and mobile experience.
+- **Windows:** download the `.exe` installer (or portable `.zip`) for your chip from the latest release — both Intel/AMD `x64` and `arm64` (Snapdragon, Surface Pro) builds are published.
+- **macOS:** download the `.dmg` (or `.zip`) for Apple silicon `arm64` or Intel `x64` from the latest release, or build it yourself on a Mac with `npm run desktop:pack:mac`.
 - **Android:** open the website in Chrome and choose **Install app**.
 - **iOS:** open the website in Safari, choose **Share**, then **Add to Home Screen**.
-- **macOS:** download the `OpenTrading.dmg` produced by the **Build macOS app** workflow, or build it yourself on a Mac with `npm run app:mac`.
 
 The Progressive Web App uses one reviewed codebase across all platforms, works offline after first load, and stores the demo portfolio only on the device.
 
@@ -135,6 +136,17 @@ OPEN_BANKING_REDIRECT_URI='https://your-host/banking.html' npm run dev
 
 Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured.
 
+### Windows desktop app
+
+The desktop app is an Electron shell (`desktop/main.cjs`) around the same reviewed build. It serves the build over a secure `app://` scheme with context isolation, a sandboxed renderer, no Node integration, and navigation restricted to the packaged origin.
+
+```bash
+npm run desktop        # build the web assets and run the app locally
+npm run desktop:pack   # build Windows x64 and arm64 installers into release/
+```
+
+Packaging Windows installers must run on a Windows machine or runner.
+
 ## Quality
 
 ```bash
@@ -149,7 +161,7 @@ Unit tests enforce 100% line, branch, and function coverage for trading, banking
 
 ## Deployment
 
-Every merge to `main` builds and publishes the website to GitHub Pages. The **Build macOS app** workflow packages the same build into an Electron desktop app and uploads `release/*.dmg` and `release/*.zip` as the `opentrading-macos` artifact for Apple silicon and Intel Macs. The artifacts are unsigned, so macOS asks for confirmation on first launch; set the `CSC_LINK` and `CSC_KEY_PASSWORD` secrets and remove `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow to sign them. Successful merged pull requests also update the release status below.
+Every merge to `main` builds and publishes the website to GitHub Pages. The `Build desktop apps` workflow builds `x64` and `arm64` Windows installers and macOS `.dmg`/`.zip` packages on every push and pull request and uploads them as artifacts; pushing a `v*` tag attaches them to a GitHub release. macOS packages are unsigned, so Gatekeeper asks for confirmation on first launch; set the `CSC_LINK` and `CSC_KEY_PASSWORD` secrets and drop `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow to sign them. Successful merged pull requests also update the release status below.
 
 <!-- release-status:start -->
 No pull request has been merged yet.
