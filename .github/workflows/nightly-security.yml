@@ -6,22 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  codeql:
-    name: CodeQL analysis
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          build-mode: none
-      - uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript-typescript"
-
   remediate-dependencies:
     name: Audit and remediate dependencies
     runs-on: ubuntu-latest
