@@ -16,26 +16,35 @@ export const indices = Object.freeze([
   { name: "DAX", code: "DAX", flag: "🇩🇪", value: 24309.62, change: 0.58 }
 ]);
 
-function searchTerms(query) {
-  return String(query ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+function normalizeSearchText(value) {
+  return value.toLowerCase().replace(/[^a-z0-9&]+/g, " ").trim();
 }
 
-function matchesTerms(fields, terms) {
-  const haystack = fields.join(" ").toLowerCase();
-  return terms.every((term) => haystack.includes(term));
+function searchTerms(query) {
+  return String(query ?? "")
+    .split(",")
+    .map((group) => normalizeSearchText(group).split(" ").filter(Boolean))
+    .filter((terms) => terms.length > 0);
+}
+
+function matchesTerms(fields, termGroups) {
+  const haystack = normalizeSearchText(fields.join(" "));
+  return termGroups.some((terms) => terms.every((term) => haystack.includes(term)));
 }
 
 export function searchInstruments(query) {
-  const terms = searchTerms(query);
+  const termGroups = searchTerms(query);
+  if (termGroups.length === 0) return [...instruments];
   return instruments.filter((instrument) => matchesTerms(
     [instrument.symbol, instrument.ticker, instrument.isin, instrument.cusip, instrument.sedol, instrument.name, instrument.exchange, instrument.country],
-    terms
+    termGroups
   ));
 }
 
 export function searchIndices(query) {
-  const terms = searchTerms(query);
-  return indices.filter((index) => matchesTerms([index.name, index.code], terms));
+  const termGroups = searchTerms(query);
+  if (termGroups.length === 0) return [...indices];
+  return indices.filter((index) => matchesTerms([index.name, index.code], termGroups));
 }
 
 export function createPortfolio() {

@@ -245,6 +245,7 @@ byId("install").addEventListener("click", async () => {
   byId("install").hidden = true;
 });
 
+searchQuery = byId("search").value;
 renderMarkets();
 render();
 loadNews();
