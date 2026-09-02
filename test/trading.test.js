@@ -108,9 +108,19 @@ test("searches instruments across names, exchanges, and identifiers", () => {
   assert.deepEqual(searchInstruments("zzzz"), []);
 });
 
+test("ignores punctuation and matches comma separated queries", () => {
+  assert.deepEqual(searchInstruments("aapl.").map((instrument) => instrument.symbol), ["AAPL"]);
+  assert.deepEqual(searchInstruments("US-8816-0R1014").map((instrument) => instrument.symbol), ["TSLA"]);
+  assert.deepEqual(searchInstruments("tsla, msft").map((instrument) => instrument.symbol), ["MSFT", "TSLA"]);
+  assert.deepEqual(searchInstruments("apple nasdaq, hsbc").map((instrument) => instrument.symbol), ["AAPL", "HSBA"]);
+  assert.deepEqual(searchInstruments(",,").length, 6);
+  assert.deepEqual(searchIndices("nikkei, dax").map((index) => index.code), ["NKY", "DAX"]);
+});
+
 test("searches indices by name and code", () => {
   assert.deepEqual(searchIndices("nikkei").map((index) => index.code), ["NKY"]);
   assert.deepEqual(searchIndices("ukx").map((index) => index.name), ["FTSE 100"]);
+  assert.deepEqual(searchIndices("s&p").map((index) => index.code), ["SPX"]);
   assert.deepEqual(searchIndices("").length, 4);
   assert.deepEqual(searchIndices("zzzz"), []);
 });

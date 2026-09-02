@@ -63,6 +63,20 @@ test("searches every listed market, index, and identifier", async ({ page }) => 
   await expect(page.getByText("No markets match your search.")).toBeVisible();
 });
 
+test("matches punctuation and comma separated searches", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByLabel("Search markets");
+
+  await search.fill("aapl.");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /MSFT/ })).toBeHidden();
+
+  await search.fill("tsla, msft");
+  await expect(page.getByRole("button", { name: /TSLA/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /MSFT/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /AAPL/ })).toBeHidden();
+});
+
 test("keeps trading available when the search matches nothing", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Search markets").fill("zzzz");
