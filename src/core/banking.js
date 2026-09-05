@@ -74,7 +74,9 @@ function minorUnitFactor(currency) {
 }
 
 function hasIndianAccountDetails(value) {
-  return isValidIfsc(value?.ifsc) && isValidIndianAccountNumber(value?.accountNumber);
+  return isValidIfsc(value?.ifsc)
+    && isValidIndianAccountNumber(value?.accountNumber)
+    && normalizeBankIdentifier(value?.currency) === "INR";
 }
 
 export function isBankAccount(value) {

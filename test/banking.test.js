@@ -189,6 +189,7 @@ test("sanitizes Indian bank accounts", () => {
     balance: 4200
   });
   assert.equal(isBankAccount({ id: "acc-3", name: "Savings", ifsc: IFSC, accountNumber: "123", currency: "INR", balance: 1 }), false);
+  assert.equal(isBankAccount({ id: "acc-4", name: "Savings", ifsc: IFSC, accountNumber: INDIAN_ACCOUNT, currency: "USD", balance: 1 }), false);
 });
 
 test("validates Indian domestic transfers", () => {
