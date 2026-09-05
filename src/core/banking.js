@@ -95,7 +95,7 @@ export function sanitizeBankAccount(account) {
     id: account.id.slice(0, 64),
     name: String(account.name).slice(0, 120),
     bank: String(account.bank ?? "").slice(0, 120),
-    maskedIban: maskAccountIdentifier(domestic ? account.accountNumber : account.iban),
+    maskedAccount: maskAccountIdentifier(domestic ? account.accountNumber : account.iban),
     bic: isValidBic(account.bic) ? normalizeBankIdentifier(account.bic) : "",
     routingCode: domestic ? normalizeBankIdentifier(account.ifsc) : "",
     country: domestic ? "IN" : ibanCountry(account.iban),
@@ -146,7 +146,7 @@ export function buildPaymentInstruction(transfer, { messageId, endToEndId, creat
     },
     counterparty: Object.freeze({
       name: String(transfer.accountName ?? "Account holder").slice(0, 140),
-      maskedIban: maskAccountIdentifier(iban),
+      maskedAccount: maskAccountIdentifier(iban),
       bic: domestic ? "" : normalizeBankIdentifier(transfer.bic),
       routingCode: domestic ? normalizeBankIdentifier(transfer.ifsc) : "",
       country: domestic ? "IN" : ibanCountry(iban)

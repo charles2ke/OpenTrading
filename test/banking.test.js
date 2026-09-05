@@ -84,7 +84,7 @@ test("recognizes and sanitizes bank accounts", () => {
     id: "acc-1",
     name: "Everyday account",
     bank: "Commerzbank",
-    maskedIban: "DE••••3000",
+    maskedAccount: "DE••••3000",
     bic: BIC,
     routingCode: "",
     country: "DE",
@@ -122,7 +122,7 @@ test("builds an ISO 20022 payment instruction", () => {
   assert.equal(instruction.endToEndId, "e2e-1");
   assert.equal(instruction.createdAt, createdAt.toISOString());
   assert.deepEqual(instruction.amount, { currency: "EUR", value: 250.5, minorUnits: 25_050 });
-  assert.deepEqual(instruction.counterparty, { name: "Ada Lovelace", maskedIban: "DE••••3000", bic: BIC, routingCode: "", country: "DE" });
+  assert.deepEqual(instruction.counterparty, { name: "Ada Lovelace", maskedAccount: "DE••••3000", bic: BIC, routingCode: "", country: "DE" });
   assert.equal(instruction.remittanceInformation, "Funding");
   assert.equal(instruction.chargeBearer, "SLEV");
   assert.equal(instruction.strongCustomerAuthentication, "required");
@@ -181,7 +181,7 @@ test("sanitizes Indian bank accounts", () => {
     id: "acc-2",
     name: "Savings",
     bank: "HDFC Bank",
-    maskedIban: "50••••6789",
+    maskedAccount: "50••••6789",
     bic: "",
     routingCode: IFSC,
     country: "IN",
@@ -204,7 +204,7 @@ test("builds an Indian domestic payment instruction", () => {
   assert.equal(instruction.scheme, "RTGS");
   assert.deepEqual(instruction.counterparty, {
     name: "Asha Rao",
-    maskedIban: "50••••6789",
+    maskedAccount: "50••••6789",
     bic: "",
     routingCode: IFSC,
     country: "IN"

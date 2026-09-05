@@ -109,7 +109,7 @@ test("lists sanitized accounts and drops unusable records", async () => {
   const service = createBankService(environment, request);
   const accounts = await service.listAccounts("conn-1");
   assert.equal(accounts.length, 1);
-  assert.equal(accounts[0].maskedIban, "DE••••3000");
+  assert.equal(accounts[0].maskedAccount, "DE••••3000");
   await assert.rejects(service.listAccounts("../secrets"), /Invalid connection/);
 
   const { request: emptyRequest } = stubRequest({ "/v1/connections/conn-1/accounts": jsonResponse({}) });
