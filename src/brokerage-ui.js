@@ -1,3 +1,5 @@
+import { getClientId } from "./core/storage.js";
+
 const byId = (id) => document.getElementById(id);
 
 function escapeHtml(value) {
@@ -15,7 +17,10 @@ export async function initBrokerage() {
   const status = byId("brokerage-status");
   const list = byId("brokerage-positions");
   try {
-    const response = await fetch("./api/broker/summary", { credentials: "same-origin" });
+    const response = await fetch("./api/broker/summary", {
+      credentials: "same-origin",
+      headers: { "X-Client-ID": getClientId(localStorage, crypto.randomUUID.bind(crypto)) }
+    });
     if (response.status === 503) {
       status.textContent = "Trading 212 is not configured on this deployment.";
       list.innerHTML = "";

@@ -52,7 +52,7 @@ The client starts with a local portfolio. When remote persistence is available, 
 | `GET /api/banking/connections/{connectionId}/accounts` | Returns masked account details for a linked bank. |
 | `DELETE /api/banking/connections/{connectionId}` | Removes a bank connection. |
 | `POST /api/banking/transfers` | Validates and submits an ISO 20022 transfer, then settles the cash balance. |
-| `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value. Returns `503` without an API key. |
+| `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value for the authenticated caller. Requires a session or `X-Client-ID` header (`400` without one); returns `503` without an API key. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
 | `GET /auth/google` and `GET /auth/microsoft` | Starts the corresponding sign-in flow. |
 | `GET /auth/{provider}/callback` | Completes the provider callback. |

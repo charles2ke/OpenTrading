@@ -224,6 +224,8 @@ async function handleBrokerApi(request, response, pathname) {
   }
   if (pathname !== "/api/broker/summary") return sendJson(response, 404, { error: "Broker route not found." });
   if (!brokerService.isConfigured()) return sendJson(response, 503, { error: "Trading 212 is not configured." });
+  const ownerId = await resolveOwnerId(request);
+  if (!ownerId) return sendJson(response, 400, { error: "Invalid client ID." });
   return sendJson(response, 200, await brokerService.summary());
 }
 

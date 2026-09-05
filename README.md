@@ -163,7 +163,7 @@ The Banking page also shows a read-only view of a Trading 212 account (cash, ope
 TRADING212_API_KEY='...' TRADING212_ENVIRONMENT='demo' npm run dev
 ```
 
-`TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. Without a key, `GET /api/broker/summary` returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
+`TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. `GET /api/broker/summary` requires the caller to be signed in or send an `X-Client-ID` header, same as the banking and portfolio routes. Without a key, it returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
 
 ### Windows desktop app
 
