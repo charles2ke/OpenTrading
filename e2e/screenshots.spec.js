@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { stubBanking } from "./banking-fixtures.js";
+import { stubBanking, stubBrokerage } from "./banking-fixtures.js";
 
 const directory = new URL("./screenshots/", import.meta.url).pathname;
 const shot = (name) => `${directory}${name}.png`;
@@ -81,6 +81,7 @@ test.describe("documentation screenshots", () => {
   test("captures the banking panel and the transfer dialog", async ({ page }) => {
     const suffix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
     await stubBanking(page);
+    await stubBrokerage(page);
     await page.goto("/banking.html");
     await page.locator(".bank-account").first().waitFor();
     await page.screenshot({ path: shot(`banking-${suffix}`), fullPage: true });
@@ -92,6 +93,12 @@ test.describe("documentation screenshots", () => {
     await page.locator("#transfer-currency").selectOption("EUR");
     await page.locator("#amount").fill("250.50");
     await page.screenshot({ path: shot(`transfer-${suffix}`) });
+
+    await page.locator("#transfer-currency").selectOption("INR");
+    await page.locator("#ifsc").fill("HDFC0001234");
+    await page.locator("#account-number").fill("50100123456789");
+    await page.locator("#amount").fill("5000");
+    await page.screenshot({ path: shot(`transfer-india-${suffix}`) });
 
     await page.locator("#transfer-dialog").evaluate((dialog) => dialog.close());
     await page.getByRole("button", { name: "Connect a bank" }).click();
