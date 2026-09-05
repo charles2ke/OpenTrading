@@ -1,4 +1,5 @@
 import { initBanking } from "./banking-ui.js";
+import { initBrokerage } from "./brokerage-ui.js";
 import { initNavigation } from "./navigation.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio } from "./core/storage.js";
 
@@ -32,6 +33,7 @@ initBanking({
 });
 
 renderCash();
+initBrokerage();
 loadRemotePortfolio(localStorage, fetch).then((remotePortfolio) => {
   if (!remotePortfolio) return;
   portfolio = remotePortfolio;

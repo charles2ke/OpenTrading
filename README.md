@@ -28,7 +28,9 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Portfolio valuation, daily movement, cash, and returns
 - Responsive, accessible UI with offline caching
 - Connect any bank through Open Banking consent and review masked account details on a dedicated Banking page
-- Deposit and withdraw cash with ISO 20022 (SEPA and SWIFT) transfer instructions
+- Built-in support for ICICI Bank, HDFC Bank, and State Bank of India (India), AIB and Bank of Ireland (Ireland), and ABN AMRO (Netherlands)
+- Deposit and withdraw cash with ISO 20022 transfer instructions over SEPA, SWIFT, and the Indian IMPS and RTGS rails
+- Read-only Trading 212 brokerage integration showing live cash, positions, and account value
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Setup page with installation steps for every platform and a first-run account checklist
 - Audit log page to review your recorded account activity and download it as CSV or JSON
@@ -76,6 +78,12 @@ Animated placeholders keep the news panel in place while headlines are being fet
 | ![Banking panel listing a connected bank account with a masked IBAN and balance](e2e/screenshots/banking-desktop.png) | ![Transfer dialog with direction, currency, amount, IBAN, BIC, and the SEPA settlement scheme](e2e/screenshots/transfer-desktop.png) |
 
 ![Connect a bank dialog listing supported countries and the banks available in the selected country](e2e/screenshots/connect-bank-desktop.png)
+
+Indian rupee transfers switch the dialog to account number and IFSC fields and settle over IMPS or RTGS.
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Transfer dialog with an Indian account number, IFSC code, and the IMPS settlement scheme](e2e/screenshots/transfer-india-desktop.png) | ![Indian transfer dialog on mobile](e2e/screenshots/transfer-india-mobile.png) |
 
 ### Beginner's guide
 
@@ -143,7 +151,19 @@ OPEN_BANKING_API_KEY='...' \
 OPEN_BANKING_REDIRECT_URI='https://your-host/banking.html' npm run dev
 ```
 
-Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured.
+Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured; `GET /api/banking/institutions` still lists the built-in banks.
+
+ICICI Bank, HDFC Bank, State Bank of India, AIB, Bank of Ireland, and ABN AMRO are always offered in the bank picker. Irish and Dutch euro payments settle over SEPA. Indian rupee payments use an account number and IFSC code instead of an IBAN and BIC and settle over IMPS, or over RTGS from ₹200,000.
+
+### Trading 212
+
+The Banking page also shows a read-only view of a Trading 212 account (cash, open positions, and account value). Create an API key in the Trading 212 app and keep it server-side:
+
+```bash
+TRADING212_API_KEY='...' TRADING212_ENVIRONMENT='demo' npm run dev
+```
+
+`TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. `GET /api/broker/summary` requires the caller to be signed in or send an `X-Client-ID` header, same as the banking and portfolio routes. Without a key, it returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
 
 ### Windows desktop app
 

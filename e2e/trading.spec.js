@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { stubBanking } from "./banking-fixtures.js";
+import { stubBanking, stubBrokerage } from "./banking-fixtures.js";
 
 test("shows a responsive global market dashboard", async ({ page }, testInfo) => {
   await page.clock.setFixedTime(new Date("2026-01-05T09:00:00"));
@@ -253,13 +253,15 @@ test("connects a bank and lists masked account details", async ({ page }) => {
   await expect(page.getByText("EUR 2500.00")).toBeVisible();
 
   await page.getByRole("button", { name: "Connect a bank" }).click();
-  await expect(page.locator("#institution option")).toHaveCount(3);
+  await expect(page.locator("#institution option")).toHaveCount(7);
   await page.locator("#bank-country").selectOption("DE");
   await expect(page.locator("#institution")).toHaveValue("commerzbank");
   await page.locator("#bank-country").selectOption("IE");
-  await expect(page.locator("#institution")).toHaveValue("bank-of-ireland");
+  await expect(page.locator("#institution")).toHaveValue("aib");
+  await page.locator("#bank-country").selectOption("NL");
+  await expect(page.locator("#institution")).toHaveValue("abn-amro");
   await page.locator("#bank-country").selectOption("IN");
-  await expect(page.locator("#institution")).toHaveValue("hdfc-bank");
+  await expect(page.locator("#institution")).toHaveValue("icici-bank");
   await page.locator("#bank-country").selectOption("DE");
   await page.getByRole("button", { name: "Continue to bank consent" }).click();
   await expect(page.locator("#toast")).toHaveText("Finish the consent at your bank to link the account");
@@ -282,6 +284,40 @@ test("rejects an invalid IBAN and sends a valid ISO 20022 transfer", async ({ pa
   await page.getByRole("button", { name: "Review & send transfer" }).click();
   await expect(page.locator("#toast")).toHaveText("Deposit sent via SEPA");
   await expect(page.locator("#cash-value")).toHaveText("$100,250.50");
+});
+
+test("sends an Indian domestic transfer over IMPS", async ({ page }) => {
+  await stubBanking(page);
+  await page.goto("/banking.html");
+  await expect(page.getByText("50••••6789")).toBeVisible();
+
+  await page.getByRole("button", { name: "Transfer money" }).click();
+  await page.locator("#transfer-currency").selectOption("INR");
+  await expect(page.locator("#international-fields")).toBeHidden();
+  await page.locator("#account-name").fill("Asha Rao");
+  await page.locator("#ifsc").fill("HDFC1001234");
+  await page.locator("#account-number").fill("50100123456789");
+  await page.locator("#amount").fill("5000");
+  await page.getByRole("button", { name: "Review & send transfer" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Enter a valid IFSC code.");
+
+  await page.locator("#ifsc").fill("HDFC0001234");
+  await expect(page.getByText("Settlement scheme").locator("..").getByText("IMPS")).toBeVisible();
+  await page.getByRole("button", { name: "Review & send transfer" }).click();
+  await expect(page.locator("#toast")).toHaveText("Deposit sent via IMPS");
+});
+
+test("shows the connected Trading 212 account", async ({ page }) => {
+  await stubBanking(page);
+  await stubBrokerage(page);
+  await page.goto("/banking.html");
+  await expect(page.getByText("Trading 212 · cash GBP 1500.25 · account value GBP 1720.25")).toBeVisible();
+  await expect(page.getByText("AAPL_US_EQ")).toBeVisible();
+});
+
+test("explains when Trading 212 is not configured", async ({ page }) => {
+  await page.goto("/banking.html");
+  await expect(page.getByText("Trading 212 is not configured on this deployment.")).toBeVisible();
 });
 
 test.describe("audit log", () => {

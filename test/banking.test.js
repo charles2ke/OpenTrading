@@ -5,11 +5,15 @@ import {
   buildPaymentInstruction,
   ibanCountry,
   isBankAccount,
+  isDomesticIndiaTransfer,
   isValidBic,
   isValidIban,
+  isValidIfsc,
+  isValidIndianAccountNumber,
   maskAccountIdentifier,
   minorUnits,
   normalizeBankIdentifier,
+  RTGS_MINIMUM_INR,
   sanitizeBankAccount,
   SUPPORTED_TRANSFER_CURRENCIES,
   TRANSFER_LIMIT,
@@ -80,8 +84,9 @@ test("recognizes and sanitizes bank accounts", () => {
     id: "acc-1",
     name: "Everyday account",
     bank: "Commerzbank",
-    maskedIban: "DE••••3000",
+    maskedAccount: "DE••••3000",
     bic: BIC,
+    routingCode: "",
     country: "DE",
     currency: "EUR",
     balance: 1234.57
@@ -117,7 +122,7 @@ test("builds an ISO 20022 payment instruction", () => {
   assert.equal(instruction.endToEndId, "e2e-1");
   assert.equal(instruction.createdAt, createdAt.toISOString());
   assert.deepEqual(instruction.amount, { currency: "EUR", value: 250.5, minorUnits: 25_050 });
-  assert.deepEqual(instruction.counterparty, { name: "Ada Lovelace", maskedIban: "DE••••3000", bic: BIC, country: "DE" });
+  assert.deepEqual(instruction.counterparty, { name: "Ada Lovelace", maskedAccount: "DE••••3000", bic: BIC, routingCode: "", country: "DE" });
   assert.equal(instruction.remittanceInformation, "Funding");
   assert.equal(instruction.chargeBearer, "SLEV");
   assert.equal(instruction.strongCustomerAuthentication, "required");
@@ -143,4 +148,67 @@ test("applies valid transfers to the portfolio cash balance", () => {
   const rejected = applyTransfer(portfolio, transfer({ amount: -5 }));
   assert.equal(rejected.error, "Enter an amount greater than zero.");
   assert.equal(rejected.portfolio, portfolio);
+});
+
+const IFSC = "HDFC0001234";
+const INDIAN_ACCOUNT = "50100123456789";
+
+function indianTransfer(overrides = {}) {
+  return { direction: "deposit", amount: 5000, currency: "INR", ifsc: IFSC, accountNumber: INDIAN_ACCOUNT, accountName: "Asha Rao", ...overrides };
+}
+
+test("validates IFSC codes and Indian account numbers", () => {
+  assert.equal(isValidIfsc("hdfc0001234"), true);
+  assert.equal(isValidIfsc("ICIC0000123"), true);
+  assert.equal(isValidIfsc("HDFC1001234"), false);
+  assert.equal(isValidIfsc(null), false);
+  assert.equal(isValidIndianAccountNumber(INDIAN_ACCOUNT), true);
+  assert.equal(isValidIndianAccountNumber("12345"), false);
+  assert.equal(isDomesticIndiaTransfer(indianTransfer()), true);
+  assert.equal(isDomesticIndiaTransfer({ ifsc: IFSC }), true);
+  assert.equal(isDomesticIndiaTransfer(transfer()), false);
+});
+
+test("routes Indian rupee payments over IMPS or RTGS", () => {
+  assert.equal(transferScheme(indianTransfer()), "IMPS");
+  assert.equal(transferScheme(indianTransfer({ amount: RTGS_MINIMUM_INR })), "RTGS");
+  assert.equal(SUPPORTED_TRANSFER_CURRENCIES.includes("INR"), true);
+});
+
+test("sanitizes Indian bank accounts", () => {
+  const domestic = sanitizeBankAccount({ id: "acc-2", name: "Savings", bank: "HDFC Bank", ifsc: IFSC, accountNumber: INDIAN_ACCOUNT, currency: "INR", balance: 4200 });
+  assert.deepEqual(domestic, {
+    id: "acc-2",
+    name: "Savings",
+    bank: "HDFC Bank",
+    maskedAccount: "50••••6789",
+    bic: "",
+    routingCode: IFSC,
+    country: "IN",
+    currency: "INR",
+    balance: 4200
+  });
+  assert.equal(isBankAccount({ id: "acc-3", name: "Savings", ifsc: IFSC, accountNumber: "123", currency: "INR", balance: 1 }), false);
+  assert.equal(isBankAccount({ id: "acc-4", name: "Savings", ifsc: IFSC, accountNumber: INDIAN_ACCOUNT, currency: "USD", balance: 1 }), false);
+});
+
+test("validates Indian domestic transfers", () => {
+  const portfolio = { cash: 100000, positions: {} };
+  assert.equal(validateTransfer(portfolio, indianTransfer()), "");
+  assert.equal(validateTransfer(portfolio, indianTransfer({ currency: "USD" })), "Indian bank transfers must be sent in INR.");
+  assert.equal(validateTransfer(portfolio, indianTransfer({ ifsc: "HDFC1001234" })), "Enter a valid IFSC code.");
+  assert.equal(validateTransfer(portfolio, indianTransfer({ accountNumber: "12" })), "Enter a valid Indian bank account number.");
+});
+
+test("builds an Indian domestic payment instruction", () => {
+  const instruction = buildPaymentInstruction(indianTransfer({ amount: 250_000 }));
+  assert.equal(instruction.scheme, "RTGS");
+  assert.deepEqual(instruction.counterparty, {
+    name: "Asha Rao",
+    maskedAccount: "50••••6789",
+    bic: "",
+    routingCode: IFSC,
+    country: "IN"
+  });
+  assert.deepEqual(instruction.amount, { currency: "INR", value: 250_000, minorUnits: 25_000_000 });
 });

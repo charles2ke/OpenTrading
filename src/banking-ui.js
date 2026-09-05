@@ -58,14 +58,24 @@ export function initBanking({ getPortfolio, onTransferred, showToast }) {
     return { ...values, amount: Number(values.amount) };
   }
 
+  function updateRailFields() {
+    const domestic = currencySelect.value === "INR";
+    for (const [id, hidden] of [["international-fields", domestic], ["india-fields", !domestic]]) {
+      const container = byId(id);
+      container.hidden = hidden;
+      for (const field of container.querySelectorAll("input")) field.disabled = hidden;
+    }
+  }
+
   function updateSchemePreview() {
+    updateRailFields();
     byId("transfer-scheme").textContent = transferScheme(transferValues());
   }
 
   function renderAccounts(accounts) {
     byId("bank-accounts").innerHTML = accounts.map((account) => `
       <article class="bank-account">
-        <div><strong>${escapeHtml(account.name)}</strong><small>${escapeHtml(account.bank)} · ${escapeHtml(account.maskedIban)}</small></div>
+        <div><strong>${escapeHtml(account.name)}</strong><small>${escapeHtml(account.bank)} · ${escapeHtml(account.maskedAccount)}</small></div>
         <div class="bank-account-meta"><strong>${escapeHtml(account.currency)} ${escapeHtml(account.balance.toFixed(2))}</strong><small>${escapeHtml(account.bic)} · ${escapeHtml(account.country)}</small></div>
       </article>`).join("");
     byId("empty-bank-accounts").hidden = accounts.length > 0;

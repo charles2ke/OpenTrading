@@ -15,6 +15,7 @@ flowchart LR
   Server --> MongoDB[(MongoDB)]
   Server -->|OIDC Authorization Code + PKCE| IdP[Google or Microsoft]
   Server -->|Open Banking consent and ISO 20022 payments| Bank[Open Banking provider]
+  Server -->|read-only account and portfolio| Broker[Trading 212 API]
 ```
 
 ## Client application
@@ -24,7 +25,9 @@ flowchart LR
 - `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes.
 - `audit.html` and `src/audit.js` render the audit log page. It loads the signed-in user's pseudonymized audit events, filters them by text and status, and exports the filtered rows to CSV or JSON with `src/core/audit.js`.
 - `setup.html` and `src/setup.js` render the Setup page, a static guide covering installation on each platform, first-run account steps, and running the project locally.
-- `src/core/banking.js` is the banking domain layer. It validates IBANs with the ISO 13616 mod-97 checksum, validates ISO 9362 BIC codes, masks account identifiers, decides between the SEPA and SWIFT settlement schemes, and builds ISO 20022 `pain.001` payment instructions.
+- `src/core/banking.js` is the banking domain layer. It validates IBANs with the ISO 13616 mod-97 checksum, validates ISO 9362 BIC codes and Indian IFSC codes and account numbers, masks account identifiers, decides between the SEPA, SWIFT, IMPS, and RTGS settlement schemes, and builds ISO 20022 `pain.001` payment instructions.
+- `src/core/institutions.js` lists the banks OpenTrading supports directly (ICICI Bank, HDFC Bank, State Bank of India, AIB, Bank of Ireland, and ABN AMRO) and merges them with the aggregator's own institution list.
+- `src/core/brokerage.js` normalizes Trading 212 cash and portfolio payloads into safe, rounded summaries; `src/brokerage-ui.js` renders that summary on the Banking page.
 - `banking.html` and `src/banking.js` render the banking page, which shows the available cash balance and reuses `src/banking-ui.js`.
 - `src/banking-ui.js` renders the bank connections panel, the bank consent dialog, and the transfer dialog, and talks to the `/api/banking/*` endpoints.
 - `src/core/storage.js` is the persistence adapter. It reads and writes the local portfolio and client identifier, then synchronizes the portfolio with the optional server API.
@@ -49,6 +52,7 @@ The client starts with a local portfolio. When remote persistence is available, 
 | `GET /api/banking/connections/{connectionId}/accounts` | Returns masked account details for a linked bank. |
 | `DELETE /api/banking/connections/{connectionId}` | Removes a bank connection. |
 | `POST /api/banking/transfers` | Validates and submits an ISO 20022 transfer, then settles the cash balance. |
+| `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value for the authenticated caller. Requires a session or `X-Client-ID` header (`400` without one); returns `503` without an API key. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
 | `GET /auth/google` and `GET /auth/microsoft` | Starts the corresponding sign-in flow. |
 | `GET /auth/{provider}/callback` | Completes the provider callback. |
@@ -71,7 +75,13 @@ flowchart LR
 
 `src/server/bank-service.js` talks to an Open Banking (PSD2/FDX-style) aggregator over HTTPS using a bearer API key that never reaches the browser. Consent happens at the user's own bank, so OpenTrading never sees banking credentials. Only pseudonymous connection references are stored in MongoDB; account numbers are masked before they leave the server, and IBAN, BIC, and account numbers are redacted from audit metadata.
 
-Transfers are validated against the portfolio and payment standards (ISO 4217 currency, ISO 13616 IBAN, ISO 9362 BIC, two-decimal amounts, per-instruction limit) and then serialized as an ISO 20022 `pain.001.001.09` credit-transfer instruction. Euro payments inside the SEPA zone use the SEPA scheme; everything else settles over SWIFT. The provider performs strong customer authentication before the payment is executed.
+Transfers are validated against the portfolio and payment standards (ISO 4217 currency, ISO 13616 IBAN, ISO 9362 BIC, IFSC code and account number for Indian rupee payments, two-decimal amounts, per-instruction limit) and then serialized as an ISO 20022 `pain.001.001.09` credit-transfer instruction. Euro payments inside the SEPA zone use the SEPA scheme, Indian rupee payments settle over IMPS or, from ₹200,000, over RTGS, and everything else settles over SWIFT. The provider performs strong customer authentication before the payment is executed.
+
+`GET /api/banking/institutions` merges the aggregator's institutions with the built-in list, so ICICI Bank, HDFC Bank, State Bank of India, AIB, Bank of Ireland, and ABN AMRO can always be selected, even before an aggregator is configured.
+
+### Trading 212
+
+`src/server/broker-service.js` reads the Trading 212 equity account information, cash, and portfolio over HTTPS with a server-side API key, caches the summary for 30 seconds, and returns only normalized, rounded values. The integration is read-only: no orders are placed through the API, and the key never reaches the browser.
 
 ```mermaid
 sequenceDiagram

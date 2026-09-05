@@ -49,6 +49,14 @@
             </article>
           </section>
 
+          <section class="panel" id="brokerage">
+            <div class="section-head">
+              <div><p class="eyebrow">BROKERAGE</p><h2>Trading 212</h2></div>
+            </div>
+            <p class="banking-status" id="brokerage-status" role="status">Checking your Trading 212 account…</p>
+            <div id="brokerage-positions" class="bank-accounts"></div>
+          </section>
+
           <section class="panel" id="banking">
             <div class="section-head">
               <div><p class="eyebrow">BANK CONNECTIONS</p><h2>Banking</h2></div>
@@ -87,9 +95,13 @@
           <label>Amount<input id="amount" name="amount" type="number" min="0.01" step="0.01" value="100" required></label>
           <label>Account holder<input id="account-name" name="accountName" type="text" maxlength="140" autocomplete="name" required></label>
         </div>
-        <div class="form-row">
+        <div class="form-row" id="international-fields">
           <label>IBAN<input id="iban" name="iban" type="text" maxlength="42" autocomplete="off" spellcheck="false" required></label>
           <label>BIC (SWIFT)<input id="bic" name="bic" type="text" maxlength="11" autocomplete="off" spellcheck="false" required></label>
+        </div>
+        <div class="form-row" id="india-fields" hidden>
+          <label>Account number<input id="account-number" name="accountNumber" type="text" maxlength="18" autocomplete="off" spellcheck="false" inputmode="numeric" disabled required></label>
+          <label>IFSC code<input id="ifsc" name="ifsc" type="text" maxlength="11" autocomplete="off" spellcheck="false" disabled required></label>
         </div>
         <label>Reference<input id="transfer-reference" name="reference" type="text" maxlength="140" value="OpenTrading transfer"></label>
         <div class="order-preview"><span>Settlement scheme</span><strong id="transfer-scheme">SWIFT</strong></div>
