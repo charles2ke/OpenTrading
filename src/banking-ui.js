@@ -58,7 +58,17 @@ export function initBanking({ getPortfolio, onTransferred, showToast }) {
     return { ...values, amount: Number(values.amount) };
   }
 
+  function updateRailFields() {
+    const domestic = currencySelect.value === "INR";
+    for (const [id, hidden] of [["international-fields", domestic], ["india-fields", !domestic]]) {
+      const container = byId(id);
+      container.hidden = hidden;
+      for (const field of container.querySelectorAll("input")) field.disabled = hidden;
+    }
+  }
+
   function updateSchemePreview() {
+    updateRailFields();
     byId("transfer-scheme").textContent = transferScheme(transferValues());
   }
 

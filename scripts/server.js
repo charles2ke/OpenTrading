@@ -3,9 +3,11 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { applyTransfer } from "../src/core/banking.js";
+import { mergeInstitutions } from "../src/core/institutions.js";
 import { createPortfolio, getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
 import { createBankService } from "../src/server/bank-service.js";
+import { createBrokerService } from "../src/server/broker-service.js";
 import { createNewsService } from "../src/server/news-service.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
 import { createSecuritiesCache } from "../src/server/securities-cache.js";
@@ -34,6 +36,7 @@ const securityHeaders = {
 const securitiesCache = createSecuritiesCache(instruments);
 const newsService = createNewsService(process.env);
 const bankService = createBankService(process.env);
+const brokerService = createBrokerService(process.env);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -214,13 +217,25 @@ function handleNewsApi(request, response, requestUrl) {
     .catch(() => sendJson(response, 502, { error: "Unable to fetch news right now." }));
 }
 
+async function handleBrokerApi(request, response, pathname) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  if (pathname !== "/api/broker/summary") return sendJson(response, 404, { error: "Broker route not found." });
+  if (!brokerService.isConfigured()) return sendJson(response, 503, { error: "Trading 212 is not configured." });
+  return sendJson(response, 200, await brokerService.summary());
+}
+
 async function handleBankingApi(request, response, pathname, requestUrl) {
-  if (!bankService.isConfigured()) return sendJson(response, 503, { error: "Bank connections are not configured." });
+  const country = requestUrl.searchParams.get("country") || "";
 
   if (pathname === "/api/banking/institutions" && request.method === "GET") {
-    const institutions = await bankService.listInstitutions(requestUrl.searchParams.get("country") || "");
-    return sendJson(response, 200, { institutions });
+    const provided = bankService.isConfigured() ? await bankService.listInstitutions(country) : [];
+    return sendJson(response, 200, { institutions: mergeInstitutions(provided, country) });
   }
+
+  if (!bankService.isConfigured()) return sendJson(response, 503, { error: "Bank connections are not configured." });
 
   const dataStore = await dataStorePromise;
   if (!dataStore) return sendJson(response, 503, { error: "MongoDB is not configured." });
@@ -324,6 +339,13 @@ createServer(async (request, response) => {
       const dataStore = await dataStorePromise;
       await auditActivity(dataStore?.audit, { action: "bank.request", actor: "anonymous", status: "failure", metadata: { pathname, method: request.method } });
       return sendJson(response, 400, { error: "Invalid banking request." });
+    }
+  }
+  if (pathname.startsWith("/api/broker")) {
+    try {
+      return await handleBrokerApi(request, response, pathname);
+    } catch {
+      return sendJson(response, 502, { error: "Unable to reach Trading 212 right now." });
     }
   }
   if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);
