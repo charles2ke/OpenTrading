@@ -42,8 +42,23 @@ jobs:
           git add package-lock.json
           git commit -m "fix: remediate npm audit findings"
           git push origin "$branch"
-          gh pr create \
+          if gh pr create \
             --base "${{ github.event.repository.default_branch }}" \
             --head "$branch" \
             --title "fix: remediate npm audit findings" \
-            --body "Automated nightly dependency remediation. The workflow ran \`npm audit\`, linting, unit tests, and a production build."
+            --body "Automated nightly dependency remediation. The workflow ran \`npm audit\`, linting, unit tests, and a production build." 2>"$RUNNER_TEMP/pr-create.log"; then
+            exit 0
+          fi
+          cat "$RUNNER_TEMP/pr-create.log"
+          if grep -q "not permitted to create or approve pull requests" "$RUNNER_TEMP/pr-create.log"; then
+            echo "::warning::GitHub Actions is not allowed to open pull requests in this repository. Remediation branch \`$branch\` was pushed; open the pull request manually."
+            {
+              echo "## Dependency remediation"
+              echo
+              echo "Branch \`$branch\` was pushed, but GitHub Actions is not permitted to open pull requests."
+              echo
+              echo "[Open the pull request manually](${{ github.server_url }}/${{ github.repository }}/compare/${{ github.event.repository.default_branch }}...$branch?expand=1)"
+            } >>"$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit 1
