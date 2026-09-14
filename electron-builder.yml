@@ -13,14 +13,8 @@ asar: true
 npmRebuild: false
 win:
   target:
-    - target: nsis
-      arch:
-        - x64
-        - arm64
-    - target: zip
-      arch:
-        - x64
-        - arm64
+    - nsis
+    - zip
   artifactName: ${productName}-${version}-${arch}.${ext}
 nsis:
   oneClick: false
@@ -30,14 +24,8 @@ nsis:
   shortcutName: OpenTrading
 mac:
   target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
-    - target: zip
-      arch:
-        - x64
-        - arm64
+    - dmg
+    - zip
   category: public.app-category.finance
   hardenedRuntime: true
   gatekeeperAssess: false
