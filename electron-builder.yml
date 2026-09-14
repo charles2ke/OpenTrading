@@ -13,9 +13,15 @@ asar: true
 npmRebuild: false
 win:
   target:
-    - nsis
-    - zip
-  artifactName: ${productName}-${version}-${arch}.${ext}
+    - target: nsis
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false
@@ -30,4 +36,4 @@ mac:
   hardenedRuntime: true
   gatekeeperAssess: false
   darkModeSupport: true
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
