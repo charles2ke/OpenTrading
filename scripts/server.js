@@ -233,7 +233,10 @@ async function handleQuotesApi(request, response, requestUrl) {
   const unknown = symbols.filter((symbol) => !getInstrument(symbol));
   if (unknown.length > 0) return sendJson(response, 404, { error: `Unknown symbol(s): ${unknown.join(", ")}` });
   return marketDataService.quotes(symbols)
-    .then((quotes) => sendJson(response, 200, { quotes }))
+    .then((quotes) => {
+      if (quotes.length === 0) return sendJson(response, 502, { error: "Unable to fetch market data right now." });
+      return sendJson(response, 200, { quotes });
+    })
     .catch(() => sendJson(response, 502, { error: "Unable to fetch market data right now." }));
 }
 
