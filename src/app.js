@@ -1,4 +1,4 @@
-import { executeOrder, getInstrument, instruments, searchIndices, searchInstruments, summarizePortfolio } from "./core/trading.js";
+import { applyQuotes, executeOrder, getInstrument, marketInstruments, searchIndices, searchInstruments, summarizePortfolio } from "./core/trading.js";
 import { watchedSymbols } from "./core/news.js";
 import { initNavigation } from "./navigation.js";
 import { loadPortfolio, loadRemotePortfolio, savePortfolio, saveRemotePortfolio } from "./core/storage.js";
@@ -113,6 +113,27 @@ async function loadNews() {
   }
 }
 
+const QUOTE_REFRESH_MS = 60_000;
+
+async function loadQuotes() {
+  try {
+    const response = await fetch("./api/quotes", { credentials: "same-origin" });
+    if (!response.ok) return;
+    const { quotes } = await response.json();
+    if (!Array.isArray(quotes) || quotes.length === 0) return;
+    applyQuotes(quotes);
+    const latest = quotes.map((quote) => Date.parse(quote?.asOf)).filter((time) => !Number.isNaN(time));
+    byId("market-status").textContent = latest.length > 0
+      ? `Live prices ${formatRelativeTime(new Date(Math.max(...latest)).toISOString())}`
+      : "Live prices";
+    renderMarkets();
+    render();
+    updateOrderTotal();
+  } catch {
+    // Keep the cached, illustrative prices when live market data is unavailable.
+  }
+}
+
 function render() {
 
   const summary = summarizePortfolio(portfolio);
@@ -155,7 +176,7 @@ function renderMarkets() {
   }).join("");
   byId("empty-watchlist").hidden = matchedInstruments.length > 0;
 
-  const tradable = matchedInstruments.length > 0 ? matchedInstruments : instruments;
+  const tradable = matchedInstruments.length > 0 ? matchedInstruments : marketInstruments();
   const selected = symbolSelect.value;
   symbolSelect.innerHTML = tradable.map((stock) =>
     `<option value="${stock.symbol}">${stock.symbol} · ${stock.name} (${stock.exchange})</option>`
@@ -249,6 +270,8 @@ searchQuery = byId("search").value;
 renderMarkets();
 render();
 loadNews();
+loadQuotes();
+window.setInterval(loadQuotes, QUOTE_REFRESH_MS);
 openTradeFromHash();
 loadRemotePortfolio(localStorage, fetch).then((remotePortfolio) => {
   if (!remotePortfolio) return;

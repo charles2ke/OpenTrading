@@ -16,13 +16,15 @@ flowchart LR
   Server -->|OIDC Authorization Code + PKCE| IdP[Google or Microsoft]
   Server -->|Open Banking consent and ISO 20022 payments| Bank[Open Banking provider]
   Server -->|read-only account and portfolio| Broker[Trading 212 API]
+  Server -->|delayed quotes| MarketData[Market data provider]
 ```
 
 ## Client application
 
 - `index.html` defines the accessible dashboard shell and loads the application entry point.
 - `src/main.jsx` mounts the React authentication controls. The trading dashboard in `src/app.js` uses the DOM directly to render market data, positions, order feedback, and installation controls.
-- `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes.
+- `src/core/trading.js` is the domain layer. It contains the fixed, illustrative market data and validates orders, executes trades, summarizes portfolios, and verifies portfolio shapes. `applyQuotes` overlays live quotes on those instruments so every lookup, search, and valuation uses the freshest price available.
+- `src/core/quotes.js` validates provider quotes (`normalizeQuote`) and merges them over the cached instrument prices (`mergeQuotes`), marking each instrument as `live` or `cached`.
 - `audit.html` and `src/audit.js` render the audit log page. It loads the signed-in user's pseudonymized audit events, filters them by text and status, and exports the filtered rows to CSV or JSON with `src/core/audit.js`.
 - `setup.html` and `src/setup.js` render the Setup page, a static guide covering installation on each platform, first-run account steps, and running the project locally.
 - `src/core/banking.js` is the banking domain layer. It validates IBANs with the ISO 13616 mod-97 checksum, validates ISO 9362 BIC codes and Indian IFSC codes and account numbers, masks account identifiers, decides between the SEPA, SWIFT, IMPS, and RTGS settlement schemes, and builds ISO 20022 `pain.001` payment instructions.
@@ -44,7 +46,8 @@ The client starts with a local portfolio. When remote persistence is available, 
 | `GET /api/portfolio` | Returns the current portfolio, or `404` when none exists. |
 | `PUT /api/portfolio` | Validates and saves a portfolio. |
 | `GET /api/audit` | Returns the signed-in user's own audit events, newest first, capped by `limit` (default 200, maximum 1000). Returns `401` when signed out and `503` without a database. |
-| `GET /api/securities` | Returns cached securities with ticker, ISIN, CUSIP, and SEDOL identifiers. |
+| `GET /api/securities` | Returns cached securities with ticker, ISIN, CUSIP, and SEDOL identifiers, enriched with live quotes when market data is configured. |
+| `GET /api/quotes` | Returns live quotes for the optional `symbols` list (defaults to every cached security, capped at 25). Returns `404` for unknown symbols, `503` without a market-data key, and `502` when the provider is unreachable. |
 | `GET /api/securities/{identifierType}/{identifier}` | Returns one cached security by `symbol`, `ticker`, `isin`, `cusip`, or `sedol`. |
 | `GET /api/banking/institutions` | Lists banks that can be connected, optionally filtered by `country`. |
 | `GET /api/banking/connections` | Lists the caller's bank connections. |
@@ -78,6 +81,10 @@ flowchart LR
 Transfers are validated against the portfolio and payment standards (ISO 4217 currency, ISO 13616 IBAN, ISO 9362 BIC, IFSC code and account number for Indian rupee payments, two-decimal amounts, per-instruction limit) and then serialized as an ISO 20022 `pain.001.001.09` credit-transfer instruction. Euro payments inside the SEPA zone use the SEPA scheme, Indian rupee payments settle over IMPS or, from ₹200,000, over RTGS, and everything else settles over SWIFT. The provider performs strong customer authentication before the payment is executed.
 
 `GET /api/banking/institutions` merges the aggregator's institutions with the built-in list, so ICICI Bank, HDFC Bank, State Bank of India, AIB, Bank of Ireland, and ABN AMRO can always be selected, even before an aggregator is configured.
+
+### Market data
+
+`src/server/market-data-service.js` fetches delayed quotes from one configurable provider (`finnhub` by default, or `twelvedata`) over HTTPS with a server-side API key, rejects non-HTTPS base URLs, times out after 10 seconds, and caches each symbol for 30 seconds. Symbols are validated against the securities cache before a request leaves the server, and `Promise.allSettled` keeps one failing symbol from failing the batch. When no key is configured, or the provider is unreachable, the server and client fall back to the bundled illustrative prices, so the offline experience is unchanged. The browser only calls same-origin routes, so the Content Security Policy stays unchanged.
 
 ### Trading 212
 
@@ -122,7 +129,7 @@ Vite builds the browser assets into `dist/`. `npm run dev` first builds those as
 
 `desktop/main.cjs` is an Electron main process that serves the same `dist/` build over a privileged, secure `app://` scheme so the shipped Content Security Policy still applies. The renderer runs with context isolation, sandboxing, and no Node integration; requests are confined to `dist/`, navigation is restricted to the packaged origin, and external `https:` links open in the system browser.
 
-`electron-builder.yml` packages that shell into NSIS installers and portable ZIP archives for Windows `x64` and `arm64`, and into `.dmg` disk images and ZIP archives for macOS Intel `x64` and Apple silicon `arm64`. The `Build desktop apps` workflow (`.github/workflows/desktop.yml`) runs matrix jobs on `windows-latest` and `macos-latest` that lint, run the unit tests, build the web assets, package each architecture, and upload the results as artifacts. macOS packages are built unsigned unless signing secrets are configured. Pushing a `v*` tag additionally attaches every package to a GitHub release.
+`electron-builder.yml` packages that shell into NSIS installers and portable ZIP archives for Windows `x64` and `arm64`, and into `.dmg` disk images and ZIP archives for macOS Intel `x64` and Apple silicon `arm64`. The `Build desktop apps` workflow (`.github/workflows/desktop.yml`) runs one job on `windows-latest` and one on `macos-latest` that lint, run the unit tests, build the web assets, package both architectures in a single `electron-builder` run, and upload the results as artifacts. Packaging both architectures together keeps a single `latest.yml` and `latest-mac.yml` per platform, so the auto-update metadata of one architecture cannot overwrite the other when the artifacts are merged for a release. macOS packages are built unsigned unless signing secrets are configured. Pushing a `v*` tag additionally attaches every package to a GitHub release.
 
 ## Quality boundaries
 

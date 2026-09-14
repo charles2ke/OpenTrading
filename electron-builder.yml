@@ -21,7 +21,7 @@ win:
       arch:
         - x64
         - arm64
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false
@@ -30,16 +30,10 @@ nsis:
   shortcutName: OpenTrading
 mac:
   target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
-    - target: zip
-      arch:
-        - x64
-        - arm64
+    - dmg
+    - zip
   category: public.app-category.finance
   hardenedRuntime: true
   gatekeeperAssess: false
   darkModeSupport: true
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
