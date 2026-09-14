@@ -37,8 +37,10 @@ jobs:
           foreach ($attempt in 1..3) {
             npx electron-builder --win --${{ matrix.arch }} --publish never
             if ($LASTEXITCODE -eq 0) { exit 0 }
-            Write-Host "electron-builder failed (attempt $attempt); retrying in 30s"
-            Start-Sleep -Seconds 30
+            if ($attempt -lt 3) {
+              Write-Host "electron-builder failed (attempt $attempt); retrying in 30s"
+              Start-Sleep -Seconds 30
+            }
           }
           exit 1
         env:
@@ -75,8 +77,10 @@ jobs:
             if npx electron-builder --mac --${{ matrix.arch }} --publish never; then
               exit 0
             fi
-            echo "electron-builder failed (attempt $attempt); retrying in 30s"
-            sleep 30
+            if [ "$attempt" -lt 3 ]; then
+              echo "electron-builder failed (attempt $attempt); retrying in 30s"
+              sleep 30
+            fi
           done
           exit 1
         env:
