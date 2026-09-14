@@ -4,10 +4,12 @@ import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { applyTransfer } from "../src/core/banking.js";
 import { mergeInstitutions } from "../src/core/institutions.js";
+import { MAX_QUOTE_SYMBOLS, mergeQuotes } from "../src/core/quotes.js";
 import { createPortfolio, getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
 import { createBankService } from "../src/server/bank-service.js";
 import { createBrokerService } from "../src/server/broker-service.js";
+import { createMarketDataService } from "../src/server/market-data-service.js";
 import { createNewsService } from "../src/server/news-service.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
 import { createSecuritiesCache } from "../src/server/securities-cache.js";
@@ -37,6 +39,7 @@ const securitiesCache = createSecuritiesCache(instruments);
 const newsService = createNewsService(process.env);
 const bankService = createBankService(process.env);
 const brokerService = createBrokerService(process.env);
+const marketDataService = createMarketDataService(process.env);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -187,17 +190,54 @@ async function handleAuditApi(request, response, requestUrl) {
   return sendJson(response, 200, { events });
 }
 
-function handleSecuritiesApi(request, response, pathname) {
+function requestedSymbols(requestUrl) {
+  const requested = [...new Set((requestUrl.searchParams.get("symbols") || "").split(",")
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean))];
+  return requested.length > 0 ? requested.slice(0, MAX_QUOTE_SYMBOLS) : null;
+}
+
+async function liveQuotes(symbols) {
+  if (!marketDataService.isConfigured()) return [];
+  try {
+    return await marketDataService.quotes(symbols);
+  } catch {
+    return [];
+  }
+}
+
+async function handleSecuritiesApi(request, response, pathname) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
     return sendJson(response, 405, { error: "Method not allowed." });
   }
-  if (pathname === "/api/securities") return sendJson(response, 200, { securities: securitiesCache.list() });
+  if (pathname === "/api/securities") {
+    const securities = securitiesCache.list();
+    const quotes = await liveQuotes(securities.map((security) => security.symbol));
+    return sendJson(response, 200, { securities: mergeQuotes(securities, quotes) });
+  }
   const match = pathname.match(/^\/api\/securities\/(symbol|ticker|isin|cusip|sedol)\/(.+)$/i);
   if (!match) return sendJson(response, 404, { error: "Security route not found." });
   const [, type, identifier] = match;
   const security = securitiesCache.findByIdentifier(type, identifier);
   return sendJson(response, security ? 200 : 404, security ?? { error: "Security not found." });
+}
+
+async function handleQuotesApi(request, response, requestUrl) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  if (!marketDataService.isConfigured()) return sendJson(response, 503, { error: "Market data is not configured." });
+  const symbols = requestedSymbols(requestUrl) ?? securitiesCache.list().map((security) => security.symbol);
+  const unknown = symbols.filter((symbol) => !getInstrument(symbol));
+  if (unknown.length > 0) return sendJson(response, 404, { error: `Unknown symbol(s): ${unknown.join(", ")}` });
+  return marketDataService.quotes(symbols)
+    .then((quotes) => {
+      if (quotes.length === 0) return sendJson(response, 502, { error: "Unable to fetch market data right now." });
+      return sendJson(response, 200, { quotes });
+    })
+    .catch(() => sendJson(response, 502, { error: "Unable to fetch market data right now." }));
 }
 
 function handleNewsApi(request, response, requestUrl) {
@@ -351,6 +391,7 @@ createServer(async (request, response) => {
     }
   }
   if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);
+  if (pathname === "/api/quotes") return handleQuotesApi(request, response, parsedUrl);
   if (pathname === "/api/news") return handleNewsApi(request, response, parsedUrl);
   const relative = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, "").replace(/^[/\\]+/, "");
   let file = join(root, relative || "index.html");

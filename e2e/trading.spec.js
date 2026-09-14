@@ -375,3 +375,24 @@ test.describe("audit log", () => {
     await expect(page.locator("#toast")).toHaveText("There are no audit events to download.");
   });
 });
+
+test("refreshes market prices from the live quote feed", async ({ page }) => {
+  await page.route((url) => url.pathname.endsWith("/api/quotes"), (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      quotes: [{ symbol: "AAPL", price: 300, previousClose: 250, currency: "USD", asOf: new Date().toISOString() }]
+    })
+  }));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toContainText("$300.00");
+  await expect(page.getByText(/Live prices/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /MSFT/ })).toContainText("$418.79");
+});
+
+test("keeps illustrative prices when the quote feed is unavailable", async ({ page }) => {
+  await page.route((url) => url.pathname.endsWith("/api/quotes"), (route) => route.fulfill({ status: 503 }));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /AAPL/ })).toContainText("$232.14");
+  await expect(page.getByText("Illustrative prices")).toBeVisible();
+});
