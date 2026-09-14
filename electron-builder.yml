@@ -21,7 +21,7 @@ win:
       arch:
         - x64
         - arm64
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false
@@ -42,4 +42,4 @@ mac:
   hardenedRuntime: true
   gatekeeperAssess: false
   darkModeSupport: true
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
