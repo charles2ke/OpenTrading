@@ -1,3 +1,5 @@
+import { mergeQuotes } from "./quotes.js";
+
 export const STARTING_CASH = 100_000;
 
 export const instruments = Object.freeze([
@@ -15,6 +17,22 @@ export const indices = Object.freeze([
   { name: "Nikkei 225", code: "NKY", flag: "🇯🇵", value: 42520.27, change: -0.46 },
   { name: "DAX", code: "DAX", flag: "🇩🇪", value: 24309.62, change: 0.58 }
 ]);
+
+let liveInstruments = instruments;
+
+export function marketInstruments() {
+  return liveInstruments;
+}
+
+export function applyQuotes(quotes) {
+  liveInstruments = Object.freeze(mergeQuotes(instruments, quotes).map((instrument) => Object.freeze(instrument)));
+  return liveInstruments;
+}
+
+export function resetQuotes() {
+  liveInstruments = instruments;
+  return liveInstruments;
+}
 
 function normalizeSearchText(value) {
   return value.toLowerCase().replace(/[^a-z0-9&]+/g, " ").trim();
@@ -34,8 +52,8 @@ function matchesTerms(fields, termGroups) {
 
 export function searchInstruments(query) {
   const termGroups = searchTerms(query);
-  if (termGroups.length === 0) return [...instruments];
-  return instruments.filter((instrument) => matchesTerms(
+  if (termGroups.length === 0) return [...liveInstruments];
+  return liveInstruments.filter((instrument) => matchesTerms(
     [instrument.symbol, instrument.ticker, instrument.isin, instrument.cusip, instrument.sedol, instrument.name, instrument.exchange, instrument.country],
     termGroups
   ));
@@ -52,7 +70,7 @@ export function createPortfolio() {
 }
 
 export function getInstrument(symbol) {
-  return instruments.find((instrument) => instrument.symbol === symbol);
+  return liveInstruments.find((instrument) => instrument.symbol === symbol);
 }
 
 export function validateOrder(portfolio, order) {
