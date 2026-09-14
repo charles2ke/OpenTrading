@@ -4,7 +4,7 @@ A fast, secure, installable paper-trading experience for global stock exchanges.
 
 **Live site:** <https://charles2ke.github.io/OpenTrading/>
 
-> **Simulation only:** OpenTrading does not execute real trades or provide investment advice. Market data is illustrative.
+> **Simulation only:** OpenTrading does not execute real trades or provide investment advice. Market data is illustrative until a market-data provider is configured, and orders are never sent to a broker.
 
 New to investing? Read the [beginner's investor concepts guide](docs/investor-concepts.md) for plain-language explanations and examples of stocks, short selling, calls, puts, and more. The same guide is available on the website on its own **Learn** page.
 
@@ -30,6 +30,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Connect any bank through Open Banking consent and review masked account details on a dedicated Banking page
 - Built-in support for ICICI Bank, HDFC Bank, and State Bank of India (India), AIB and Bank of Ireland (Ireland), and ABN AMRO (Netherlands)
 - Deposit and withdraw cash with ISO 20022 transfer instructions over SEPA, SWIFT, and the Indian IMPS and RTGS rails
+- Optional live market data: real quotes refresh the market movers, holdings, and order ticket when a provider is configured
 - Read-only Trading 212 brokerage integration showing live cash, positions, and account value
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Setup page with installation steps for every platform and a first-run account checklist
@@ -154,6 +155,16 @@ OPEN_BANKING_REDIRECT_URI='https://your-host/banking.html' npm run dev
 Keep `OPEN_BANKING_API_KEY` server-side. Without this configuration the banking endpoints return `503` and the Banking page explains that the feature is not configured; `GET /api/banking/institutions` still lists the built-in banks.
 
 ICICI Bank, HDFC Bank, State Bank of India, AIB, Bank of Ireland, and ABN AMRO are always offered in the bank picker. Irish and Dutch euro payments settle over SEPA. Indian rupee payments use an account number and IFSC code instead of an IBAN and BIC and settle over IMPS, or over RTGS from ₹200,000.
+
+### Market data
+
+Market movers, holdings, and the order ticket use the bundled illustrative prices until a market-data provider is configured. With a key, the server fetches quotes over HTTPS, caches them for 30 seconds, and the dashboard refreshes them every minute and shows how fresh they are.
+
+```bash
+MARKET_DATA_API_KEY='...' MARKET_DATA_PROVIDER='finnhub' npm run dev
+```
+
+`MARKET_DATA_PROVIDER` accepts `finnhub` (default) or `twelvedata`, and `MARKET_DATA_API_URL` can override the base URL. Keep `MARKET_DATA_API_KEY` server-side; the browser only ever calls `GET /api/quotes` on the same origin. Without a key that route returns `503` and the dashboard keeps the cached, illustrative prices, so the app still works offline. Live prices only change the displayed valuations — orders remain simulated.
 
 ### Trading 212
 
