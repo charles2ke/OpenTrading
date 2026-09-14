@@ -28,7 +28,18 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - name: Package Windows installers (x64 and arm64)
-        run: npx electron-builder --win --x64 --arm64 --publish never
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npx electron-builder --win --x64 --arm64 --publish never; then
+              exit 0
+            fi
+            echo "electron-builder attempt ${attempt} failed"
+            if [ "${attempt}" -lt 3 ]; then
+              sleep $((attempt * 30))
+            fi
+          done
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
@@ -54,7 +65,18 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - name: Package macOS apps (x64 and arm64)
-        run: npx electron-builder --mac --x64 --arm64 --publish never
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npx electron-builder --mac --x64 --arm64 --publish never; then
+              exit 0
+            fi
+            echo "electron-builder attempt ${attempt} failed"
+            if [ "${attempt}" -lt 3 ]; then
+              sleep $((attempt * 30))
+            fi
+          done
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"

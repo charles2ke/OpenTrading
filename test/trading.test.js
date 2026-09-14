@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   STARTING_CASH,
+  applyQuotes,
   createPortfolio,
   executeOrder,
   getInstrument,
+  instruments,
   isPortfolio,
+  marketInstruments,
+  resetQuotes,
   searchIndices,
   searchInstruments,
   summarizePortfolio,
@@ -123,4 +127,18 @@ test("searches indices by name and code", () => {
   assert.deepEqual(searchIndices("s&p").map((index) => index.code), ["SPX"]);
   assert.deepEqual(searchIndices("").length, 4);
   assert.deepEqual(searchIndices("zzzz"), []);
+});
+
+test("applies and resets live quotes across the instrument list", () => {
+  const live = applyQuotes([{ symbol: "AAPL", price: 300, previousClose: 290, asOf: "2026-01-05T09:00:00.000Z" }]);
+  assert.equal(live.length, instruments.length);
+  assert.equal(marketInstruments(), live);
+  assert.equal(getInstrument("AAPL").price, 300);
+  assert.equal(getInstrument("AAPL").source, "live");
+  assert.equal(searchInstruments("apple")[0].price, 300);
+  assert.equal(getInstrument("MSFT").price, 418.79);
+
+  assert.equal(resetQuotes(), instruments);
+  assert.equal(getInstrument("AAPL").price, 232.14);
+  assert.equal(searchInstruments("")[0].price, 232.14);
 });

@@ -86,7 +86,7 @@
               </div>
             </section>
             <section class="panel watchlist-panel">
-              <div class="section-head"><div><p class="eyebrow">WATCHLIST</p><h2>Market movers</h2></div></div>
+              <div class="section-head"><div><p class="eyebrow">WATCHLIST</p><h2>Market movers</h2></div><span class="updated" id="market-status">Illustrative prices</span></div>
               <div id="watchlist"></div>
               <p id="empty-watchlist" class="empty-state" hidden>No markets match your search.</p>
             </section>
@@ -112,7 +112,7 @@
         <div class="order-preview"><span>Estimated total</span><strong id="order-total">$0.00</strong></div>
         <p id="trade-error" class="form-error" role="alert"></p>
         <button class="primary-button full" value="default" type="submit">Review &amp; place order</button>
-        <small class="disclaimer">Simulation only. Quotes are illustrative and delayed.</small>
+        <small class="disclaimer">Simulation only. Orders are never sent to a broker. Quotes are live when market data is configured, otherwise illustrative.</small>
       </form>
     </dialog>
     <div id="toast" role="status" aria-live="polite"></div>
