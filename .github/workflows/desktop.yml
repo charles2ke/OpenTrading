@@ -32,7 +32,15 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - name: Package Windows installer (${{ matrix.arch }})
-        run: npx electron-builder --win --${{ matrix.arch }} --publish never
+        shell: pwsh
+        run: |
+          foreach ($attempt in 1..3) {
+            npx electron-builder --win --${{ matrix.arch }} --publish never
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "electron-builder failed (attempt $attempt); retrying in 30s"
+            Start-Sleep -Seconds 30
+          }
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
@@ -62,7 +70,15 @@ jobs:
       - run: npm run test:unit
       - run: npm run build
       - name: Package macOS app (${{ matrix.arch }})
-        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
+        run: |
+          for attempt in 1 2 3; do
+            if npx electron-builder --mac --${{ matrix.arch }} --publish never; then
+              exit 0
+            fi
+            echo "electron-builder failed (attempt $attempt); retrying in 30s"
+            sleep 30
+          done
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
