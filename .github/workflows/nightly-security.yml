@@ -35,13 +35,17 @@ jobs:
           if git diff --quiet HEAD -- package-lock.json; then
             exit 0
           fi
-          branch="security/npm-audit-${{ github.run_id }}"
+          branch="security/npm-audit"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
           git add package-lock.json
           git commit -m "fix: remediate npm audit findings"
-          git push origin "$branch"
+          git push --force origin "$branch"
+          if [ -n "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            echo "::notice::Remediation branch \`$branch\` already has an open pull request; it was updated with the latest lockfile."
+            exit 0
+          fi
           if gh pr create \
             --base "${{ github.event.repository.default_branch }}" \
             --head "$branch" \
