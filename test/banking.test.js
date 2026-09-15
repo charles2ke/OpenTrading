@@ -150,6 +150,18 @@ test("applies valid transfers to the portfolio cash balance", () => {
   assert.equal(rejected.portfolio, portfolio);
 });
 
+test("converts foreign currency transfers into the portfolio cash currency", () => {
+  const portfolio = { cash: 1000, positions: {} };
+  const deposit = applyTransfer(portfolio, transfer({ amount: 100 }), 1.08);
+  assert.equal(deposit.portfolio.cash, 1108);
+  const withdrawal = applyTransfer(portfolio, transfer({ direction: "withdrawal", amount: 100 }), 1.08);
+  assert.equal(withdrawal.portfolio.cash, 892);
+  const tooLarge = applyTransfer(portfolio, transfer({ direction: "withdrawal", amount: 950 }), 1.08);
+  assert.equal(tooLarge.error, "This transfer exceeds your available cash.");
+  assert.equal(applyTransfer(portfolio, transfer({ amount: 100 }), 0).portfolio.cash, 1100);
+  assert.equal(applyTransfer(portfolio, transfer({ amount: 100 }), "rate").portfolio.cash, 1100);
+});
+
 const IFSC = "HDFC0001234";
 const INDIAN_ACCOUNT = "50100123456789";
 

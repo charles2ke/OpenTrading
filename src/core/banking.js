@@ -69,6 +69,12 @@ export function minorUnits(amount, currency) {
   return Math.round(amount * factor);
 }
 
+export function cashAmount(amount, cashRate = 1) {
+  const rate = Number(cashRate);
+  const factor = Number.isFinite(rate) && rate > 0 ? rate : 1;
+  return Math.round(Number(amount) * factor * 100) / 100;
+}
+
 function minorUnitFactor(currency) {
   return ZERO_DECIMAL_CURRENCIES.has(normalizeBankIdentifier(currency)) ? 1 : 100;
 }
@@ -106,7 +112,7 @@ export function sanitizeBankAccount(account) {
   });
 }
 
-export function validateTransfer(portfolio, transfer) {
+export function validateTransfer(portfolio, transfer, cashRate = 1) {
   const amount = Number(transfer?.amount);
   const currency = normalizeBankIdentifier(transfer?.currency);
   const factor = minorUnitFactor(currency);
@@ -125,7 +131,7 @@ export function validateTransfer(portfolio, transfer) {
     if (!isValidIban(transfer?.iban)) return "Enter a valid IBAN.";
     if (!isValidBic(transfer?.bic)) return "Enter a valid BIC (SWIFT) code.";
   }
-  if (transfer.direction === "withdrawal" && amount > portfolio.cash) return "This transfer exceeds your available cash.";
+  if (transfer.direction === "withdrawal" && cashAmount(amount, cashRate) > portfolio.cash) return "This transfer exceeds your available cash.";
   return "";
 }
 
@@ -159,15 +165,14 @@ export function buildPaymentInstruction(transfer, { messageId, endToEndId, creat
   });
 }
 
-export function applyTransfer(portfolio, transfer) {
-  const error = validateTransfer(portfolio, transfer);
+export function applyTransfer(portfolio, transfer, cashRate = 1) {
+  const error = validateTransfer(portfolio, transfer, cashRate);
   if (error) return { portfolio, error };
-  const amount = Number(transfer.amount);
   const direction = transfer.direction === "deposit" ? 1 : -1;
   return {
     portfolio: {
       ...portfolio,
-      cash: Math.round((portfolio.cash + direction * amount) * 100) / 100
+      cash: Math.round((portfolio.cash + direction * cashAmount(transfer.amount, cashRate)) * 100) / 100
     },
     error: ""
   };
