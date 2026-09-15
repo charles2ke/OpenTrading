@@ -3,12 +3,14 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { applyTransfer } from "../src/core/banking.js";
+import { BASE_CURRENCY, normalizeCurrency, requestedCurrencies } from "../src/core/fx.js";
 import { mergeInstitutions } from "../src/core/institutions.js";
 import { MAX_QUOTE_SYMBOLS, mergeQuotes } from "../src/core/quotes.js";
 import { createPortfolio, getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
 import { AuthService, providerSettings, sessionCookie } from "../src/server/auth.js";
 import { createBankService } from "../src/server/bank-service.js";
 import { createBrokerService } from "../src/server/broker-service.js";
+import { createFxService } from "../src/server/fx-service.js";
 import { createMarketDataService } from "../src/server/market-data-service.js";
 import { createNewsService } from "../src/server/news-service.js";
 import { connectDataStore } from "../src/server/portfolio-repository.js";
@@ -40,6 +42,7 @@ const newsService = createNewsService(process.env);
 const bankService = createBankService(process.env);
 const brokerService = createBrokerService(process.env);
 const marketDataService = createMarketDataService(process.env);
+const fxService = createFxService(process.env);
 
 function sendJson(response, status, value) {
   response.writeHead(status, { ...securityHeaders, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -257,6 +260,25 @@ function handleNewsApi(request, response, requestUrl) {
     .catch(() => sendJson(response, 502, { error: "Unable to fetch news right now." }));
 }
 
+function handleFxApi(request, response, requestUrl) {
+  if (request.method !== "GET") {
+    response.setHeader("Allow", "GET");
+    return sendJson(response, 405, { error: "Method not allowed." });
+  }
+  if (!fxService.isConfigured()) return sendJson(response, 503, { error: "Exchange rates are not configured." });
+  return fxService.rates(requestedCurrencies(requestUrl.searchParams.get("currencies")))
+    .then((table) => sendJson(response, 200, table))
+    .catch(() => sendJson(response, 502, { error: "Unable to fetch exchange rates right now." }));
+}
+
+async function transferCashRate(currency) {
+  const from = normalizeCurrency(currency);
+  if (!fxService.isConfigured() || !from || from === BASE_CURRENCY) return 1;
+  const rate = await fxService.rate(from, BASE_CURRENCY);
+  if (!rate) throw new Error("Unable to convert this currency right now.");
+  return rate;
+}
+
 async function handleBrokerApi(request, response, pathname) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -320,12 +342,19 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
     const { connectionId, transfer } = await readJson(request);
     if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
     const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();
-    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer);
+    let cashRate;
+    try {
+      cashRate = await transferCashRate(transfer?.currency);
+    } catch {
+      await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: "exchange-rate-unavailable" } });
+      return sendJson(response, 502, { error: "Unable to convert this currency right now." });
+    }
+    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer, cashRate);
     if (result.error) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: result.error } });
       return sendJson(response, 422, { error: result.error });
     }
-    const settled = applyTransfer(portfolio, transfer);
+    const settled = applyTransfer(portfolio, transfer, cashRate);
     await dataStore.portfolio.save(ownerId, settled.portfolio);
     await auditActivity(auditRepository, {
       action: "bank.transfer",
@@ -393,6 +422,7 @@ createServer(async (request, response) => {
   if (pathname === "/api/securities" || pathname.startsWith("/api/securities/")) return handleSecuritiesApi(request, response, pathname);
   if (pathname === "/api/quotes") return handleQuotesApi(request, response, parsedUrl);
   if (pathname === "/api/news") return handleNewsApi(request, response, parsedUrl);
+  if (pathname === "/api/fx") return handleFxApi(request, response, parsedUrl);
   const relative = normalize(pathname).replace(/^(\.\.(\/|\\|$))+/, "").replace(/^[/\\]+/, "");
   let file = join(root, relative || "index.html");
   try {

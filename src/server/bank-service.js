@@ -98,8 +98,8 @@ export class BankService {
     });
   }
 
-  async initiateTransfer(connectionId, portfolio, transfer) {
-    const error = validateTransfer(portfolio, transfer);
+  async initiateTransfer(connectionId, portfolio, transfer, cashRate = 1) {
+    const error = validateTransfer(portfolio, transfer, cashRate);
     if (error) return { error, instruction: null, status: "rejected" };
     const instruction = buildPaymentInstruction(transfer, {
       messageId: this.randomId(),
