@@ -7,6 +7,7 @@ const IBAN_PATTERN = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/;
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const INDIAN_ACCOUNT_PATTERN = /^[0-9]{9,18}$/;
 const BIC_PATTERN = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
+const CURRENCY_FORMATTING_PATTERN = /[\s-]/g;
 const ZERO_DECIMAL_CURRENCIES = new Set(["JPY"]);
 const SEPA_COUNTRIES = new Set([
   "AD", "AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GB", "GR", "HR", "HU", "IE",
@@ -15,6 +16,10 @@ const SEPA_COUNTRIES = new Set([
 
 export function normalizeBankIdentifier(value) {
   return typeof value === "string" ? value.replace(/[\s-]/g, "").toUpperCase() : "";
+}
+
+export function normalizeTransferCurrency(value) {
+  return typeof value === "string" ? value.replace(CURRENCY_FORMATTING_PATTERN, "").toUpperCase() : "";
 }
 
 function ibanChecksum(iban) {
@@ -45,7 +50,7 @@ export function isValidIndianAccountNumber(value) {
 }
 
 export function isDomesticIndiaTransfer(transfer) {
-  return normalizeBankIdentifier(transfer?.currency) === "INR" || isValidIfsc(transfer?.ifsc);
+  return normalizeTransferCurrency(transfer?.currency) === "INR" || isValidIfsc(transfer?.ifsc);
 }
 
 export function maskAccountIdentifier(value) {
@@ -61,11 +66,11 @@ export function ibanCountry(value) {
 export function transferScheme(transfer) {
   if (isDomesticIndiaTransfer(transfer)) return Number(transfer?.amount) >= RTGS_MINIMUM_INR ? "RTGS" : "IMPS";
   const inSepaZone = SEPA_COUNTRIES.has(ibanCountry(transfer?.iban));
-  return normalizeBankIdentifier(transfer?.currency) === "EUR" && inSepaZone ? "SEPA" : "SWIFT";
+  return normalizeTransferCurrency(transfer?.currency) === "EUR" && inSepaZone ? "SEPA" : "SWIFT";
 }
 
 export function minorUnits(amount, currency) {
-  const factor = ZERO_DECIMAL_CURRENCIES.has(normalizeBankIdentifier(currency)) ? 1 : 100;
+  const factor = ZERO_DECIMAL_CURRENCIES.has(normalizeTransferCurrency(currency)) ? 1 : 100;
   return Math.round(amount * factor);
 }
 
@@ -76,13 +81,13 @@ export function cashAmount(amount, cashRate = 1) {
 }
 
 function minorUnitFactor(currency) {
-  return ZERO_DECIMAL_CURRENCIES.has(normalizeBankIdentifier(currency)) ? 1 : 100;
+  return ZERO_DECIMAL_CURRENCIES.has(normalizeTransferCurrency(currency)) ? 1 : 100;
 }
 
 function hasIndianAccountDetails(value) {
   return isValidIfsc(value?.ifsc)
     && isValidIndianAccountNumber(value?.accountNumber)
-    && normalizeBankIdentifier(value?.currency) === "INR";
+    && normalizeTransferCurrency(value?.currency) === "INR";
 }
 
 export function isBankAccount(value) {
@@ -92,7 +97,7 @@ export function isBankAccount(value) {
     && value.id.length > 0
     && typeof value.name === "string"
     && (hasIndianAccountDetails(value) || (isValidIban(value.iban) && isValidBic(value.bic)))
-    && SUPPORTED_TRANSFER_CURRENCIES.includes(normalizeBankIdentifier(value.currency))
+    && SUPPORTED_TRANSFER_CURRENCIES.includes(normalizeTransferCurrency(value.currency))
     && Number.isFinite(value.balance);
 }
 
@@ -107,14 +112,14 @@ export function sanitizeBankAccount(account) {
     bic: isValidBic(account.bic) ? normalizeBankIdentifier(account.bic) : "",
     routingCode: domestic ? normalizeBankIdentifier(account.ifsc) : "",
     country: domestic ? "IN" : ibanCountry(account.iban),
-    currency: normalizeBankIdentifier(account.currency),
+    currency: normalizeTransferCurrency(account.currency),
     balance: Math.round(account.balance * 100) / 100
   });
 }
 
 export function validateTransfer(portfolio, transfer, cashRate = 1) {
   const amount = Number(transfer?.amount);
-  const currency = normalizeBankIdentifier(transfer?.currency);
+  const currency = normalizeTransferCurrency(transfer?.currency);
   const factor = minorUnitFactor(currency);
   if (!TRANSFER_DIRECTIONS.includes(transfer?.direction)) return "Choose deposit or withdrawal.";
   if (!Number.isFinite(amount) || amount <= 0) return "Enter an amount greater than zero.";
@@ -136,7 +141,7 @@ export function validateTransfer(portfolio, transfer, cashRate = 1) {
 }
 
 export function buildPaymentInstruction(transfer, { messageId, endToEndId, createdAt } = {}) {
-  const currency = normalizeBankIdentifier(transfer.currency);
+  const currency = normalizeTransferCurrency(transfer.currency);
   const domestic = isDomesticIndiaTransfer(transfer);
   const iban = normalizeBankIdentifier(domestic ? transfer.accountNumber : transfer.iban);
   const amountMinorUnits = minorUnits(Number(transfer.amount), currency);
