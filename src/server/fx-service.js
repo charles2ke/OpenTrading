@@ -60,9 +60,11 @@ function endpoint(baseUrl, path) {
   return url;
 }
 
+/**
+ * Checks cache coverage: narrow caches never satisfy broad requests, while broad caches may satisfy narrow requests.
+ */
 function hasCachedRates(cache, requested, now) {
   if (!cache || cache.expiresAt <= now) return false;
-  // A broad request needs the provider's full table, so a narrowed cache cannot satisfy it.
   if (requested.length === 0) return cache.requested.length === 0;
   return requested.every((currency) => Object.hasOwn(cache.table.rates, currency));
 }

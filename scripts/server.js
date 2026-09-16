@@ -273,7 +273,8 @@ function handleFxApi(request, response, requestUrl) {
 
 async function transferCashRate(currency) {
   const from = normalizeCurrency(currency);
-  if (!fxService.isConfigured() || !from || from === BASE_CURRENCY || !SUPPORTED_TRANSFER_CURRENCIES.includes(from)) return 1;
+  if (!from || !SUPPORTED_TRANSFER_CURRENCIES.includes(from)) return null;
+  if (!fxService.isConfigured() || from === BASE_CURRENCY) return 1;
   const rate = await fxService.rate(from, BASE_CURRENCY);
   if (!rate) throw new Error("Unable to convert this currency right now.");
   return rate;
@@ -349,12 +350,12 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: "exchange-rate-unavailable" } });
       return sendJson(response, 502, { error: "Unable to convert this currency right now." });
     }
-    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer, cashRate);
+    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer, cashRate ?? 1);
     if (result.error) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: result.error } });
       return sendJson(response, 422, { error: result.error });
     }
-    const settled = applyTransfer(portfolio, transfer, cashRate);
+    const settled = applyTransfer(portfolio, transfer, cashRate ?? 1);
     await dataStore.portfolio.save(ownerId, settled.portfolio);
     await auditActivity(auditRepository, {
       action: "bank.transfer",
