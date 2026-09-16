@@ -30,6 +30,7 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Connect any bank through Open Banking consent and review masked account details on a dedicated Banking page
 - Built-in support for ICICI Bank, HDFC Bank, and State Bank of India (India), AIB and Bank of Ireland (Ireland), and ABN AMRO (Netherlands)
 - Deposit and withdraw cash with ISO 20022 transfer instructions over SEPA, SWIFT, and the Indian IMPS and RTGS rails
+- Optional live exchange rates that convert foreign-currency bank transfers into the portfolio cash balance
 - Optional live market data: real quotes refresh the market movers, holdings, and order ticket when a provider is configured
 - Read-only Trading 212 brokerage integration showing live cash, positions, and account value
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
@@ -165,6 +166,16 @@ MARKET_DATA_API_KEY='...' MARKET_DATA_PROVIDER='finnhub' npm run dev
 ```
 
 `MARKET_DATA_PROVIDER` accepts `finnhub` (default) or `twelvedata`, and `MARKET_DATA_API_URL` can override the base URL. Keep `MARKET_DATA_API_KEY` server-side; the browser only ever calls `GET /api/quotes` on the same origin. Without a key that route returns `503` and the dashboard keeps the cached, illustrative prices, so the app still works offline. Live prices only change the displayed valuations — orders remain simulated.
+
+### Exchange rates
+
+Bank transfers can be sent in eight currencies while the portfolio's cash balance is held in US dollars. With an exchange-rate provider configured, the server converts each foreign-currency transfer with a live reference rate before it settles, and exposes those rates on `GET /api/fx`.
+
+```bash
+FX_RATES_API_KEY='...' FX_RATES_PROVIDER='exchangerate' npm run dev
+```
+
+`FX_RATES_PROVIDER` accepts `exchangerate` (exchangerate.host, the default) or `openexchangerates`, `FX_RATES_API_URL` can override the base URL, and `FX_RATES_BASE` changes the base currency (`USD` by default). Rates are cached for 10 minutes and the key stays server-side. Without a key, `GET /api/fx` returns `503` and transfer amounts settle one-to-one, exactly as before.
 
 ### Trading 212
 

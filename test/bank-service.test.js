@@ -122,6 +122,10 @@ test("initiates transfers as ISO 20022 instructions", async () => {
   const portfolio = { cash: 1000, positions: {} };
   const transfer = { direction: "deposit", amount: 100, currency: "EUR", iban: IBAN, bic: BIC, accountName: "Ada Lovelace" };
 
+  const tooLarge = await service.initiateTransfer("conn-1", portfolio, { ...transfer, direction: "withdrawal", amount: 950 }, 1.08);
+  assert.deepEqual(tooLarge, { error: "This transfer exceeds your available cash.", instruction: null, status: "rejected" });
+  assert.equal(calls.length, 0);
+
   const result = await service.initiateTransfer("conn-1", portfolio, transfer);
   assert.equal(result.error, "");
   assert.equal(result.status, "settled");

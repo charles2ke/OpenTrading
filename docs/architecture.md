@@ -17,6 +17,7 @@ flowchart LR
   Server -->|Open Banking consent and ISO 20022 payments| Bank[Open Banking provider]
   Server -->|read-only account and portfolio| Broker[Trading 212 API]
   Server -->|delayed quotes| MarketData[Market data provider]
+  Server -->|reference exchange rates| Fx[Exchange rate provider]
 ```
 
 ## Client application
@@ -54,7 +55,8 @@ The client starts with a local portfolio. When remote persistence is available, 
 | `POST /api/banking/connections` | Starts a consent flow for one bank and returns its consent URL. |
 | `GET /api/banking/connections/{connectionId}/accounts` | Returns masked account details for a linked bank. |
 | `DELETE /api/banking/connections/{connectionId}` | Removes a bank connection. |
-| `POST /api/banking/transfers` | Validates and submits an ISO 20022 transfer, then settles the cash balance. |
+| `POST /api/banking/transfers` | Validates and submits an ISO 20022 transfer, then settles the cash balance, converting foreign-currency amounts with live exchange rates when they are configured. |
+| `GET /api/fx` | Returns reference exchange rates for the optional `currencies` list, relative to the configured base currency. Returns `503` without an exchange-rate key and `502` when the provider is unreachable. |
 | `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value for the authenticated caller. Requires a session or `X-Client-ID` header (`400` without one); returns `503` without an API key. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
 | `GET /auth/google` and `GET /auth/microsoft` | Starts the corresponding sign-in flow. |
@@ -85,6 +87,10 @@ Transfers are validated against the portfolio and payment standards (ISO 4217 cu
 ### Market data
 
 `src/server/market-data-service.js` fetches delayed quotes from one configurable provider (`finnhub` by default, or `twelvedata`) over HTTPS with a server-side API key, rejects non-HTTPS base URLs, times out after 10 seconds, and caches each symbol for 30 seconds. Symbols are validated against the securities cache before a request leaves the server, and `Promise.allSettled` keeps one failing symbol from failing the batch. When no key is configured, or the provider is unreachable, the server and client fall back to the bundled illustrative prices, so the offline experience is unchanged. The browser only calls same-origin routes, so the Content Security Policy stays unchanged.
+
+### Exchange rates
+
+`src/server/fx-service.js` fetches reference rates from one configurable provider (`exchangerate` for exchangerate.host by default, or `openexchangerates`) over HTTPS with a server-side API key, rejects non-HTTPS base URLs, times out after 10 seconds, and caches one rate table for 10 minutes. `src/core/fx.js` normalizes the provider payload into a base currency plus positive rates and converts amounts without floating-point drift beyond two decimals. Bank transfers in a currency other than the portfolio's US dollar cash balance are converted with the live rate before the withdrawal limit is checked and the balance is settled; without a key, amounts settle one-to-one exactly as before.
 
 ### Trading 212
 
