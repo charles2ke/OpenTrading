@@ -69,9 +69,18 @@ function hasCachedRates(cache, requested, now) {
   return requested.every((currency) => Object.hasOwn(cache.table.rates, currency));
 }
 
-function shouldReplaceCache(cache, requested, now) {
-  if (!cache || cache.expiresAt <= now) return true;
-  return requested.length === 0 || cache.requested.length > 0;
+/**
+ * Broad results replace the cache; narrow results replace narrow caches or extend broad coverage without extending expiry.
+ */
+function updateCache(cache, table, requested, now) {
+  if (!cache || cache.expiresAt <= now || requested.length === 0 || cache.requested.length > 0) {
+    return { table, requested, expiresAt: now + CACHE_TTL_MS };
+  }
+  return {
+    table: { ...cache.table, rates: { ...cache.table.rates, ...table.rates } },
+    requested: [],
+    expiresAt: cache.expiresAt
+  };
 }
 
 export class FxService {
@@ -103,10 +112,8 @@ export class FxService {
     if (!response.ok) throw new Error(`Exchange rate request failed with status ${response.status}.`);
     const table = normalizeRateTable(provider.parse(await response.json(), this.settings.base), this.settings.base);
     if (!table || Object.keys(table.rates).length < 2) throw new Error("Exchange rates were malformed.");
-    if (shouldReplaceCache(this.cache, requested, this.now())) {
-      this.cache = { table, requested, expiresAt: this.now() + CACHE_TTL_MS };
-    }
-    return table;
+    this.cache = updateCache(this.cache, table, requested, this.now());
+    return this.cache.table;
   }
 
   async convert(amount, from, to) {

@@ -115,8 +115,9 @@ test("keeps broad cache coverage after a narrow refresh", async () => {
   const service = createFxService(environment, request);
 
   await service.rates();
-  assert.deepEqual((await service.rates(["CHF"])).rates, { USD: 1, CHF: 0.85 });
-  assert.deepEqual((await service.rates()).rates, { USD: 1, EUR: 0.9, GBP: 0.8 });
+  assert.deepEqual((await service.rates(["CHF"])).rates, { USD: 1, EUR: 0.9, GBP: 0.8, CHF: 0.85 });
+  assert.deepEqual((await service.rates(["CHF"])).rates, { USD: 1, EUR: 0.9, GBP: 0.8, CHF: 0.85 });
+  assert.deepEqual((await service.rates()).rates, { USD: 1, EUR: 0.9, GBP: 0.8, CHF: 0.85 });
   assert.equal(calls.length, 2);
 });
 
