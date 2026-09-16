@@ -2,8 +2,8 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
-import { applyTransfer } from "../src/core/banking.js";
-import { BASE_CURRENCY, normalizeCurrency, requestedCurrencies } from "../src/core/fx.js";
+import { applyTransfer, normalizeBankIdentifier } from "../src/core/banking.js";
+import { BASE_CURRENCY, requestedCurrencies } from "../src/core/fx.js";
 import { mergeInstitutions } from "../src/core/institutions.js";
 import { MAX_QUOTE_SYMBOLS, mergeQuotes } from "../src/core/quotes.js";
 import { createPortfolio, getInstrument, instruments, isPortfolio } from "../src/core/trading.js";
@@ -272,7 +272,7 @@ function handleFxApi(request, response, requestUrl) {
 }
 
 async function transferCashRate(currency) {
-  const from = normalizeCurrency(currency);
+  const from = normalizeBankIdentifier(currency);
   if (!fxService.isConfigured() || !from || from === BASE_CURRENCY) return 1;
   const rate = await fxService.rate(from, BASE_CURRENCY);
   if (!rate) throw new Error("Unable to convert this currency right now.");
