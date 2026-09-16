@@ -279,6 +279,10 @@ async function transferCashRate(currency) {
   return rate;
 }
 
+function validateTransferBeforeFx(portfolio, transfer) {
+  return validateTransfer({ ...portfolio, cash: Number.POSITIVE_INFINITY }, transfer);
+}
+
 async function handleBrokerApi(request, response, pathname) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -342,7 +346,7 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
     const { connectionId, transfer } = await readJson(request);
     if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
     const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();
-    const validationError = validateTransfer(portfolio, transfer);
+    const validationError = validateTransferBeforeFx(portfolio, transfer);
     if (validationError) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: validationError } });
       return sendJson(response, 422, { error: validationError });

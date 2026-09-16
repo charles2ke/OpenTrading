@@ -77,7 +77,7 @@ function updateCache(cache, table, requested, now) {
     return { table, requested, expiresAt: now + CACHE_TTL_MS };
   }
   return {
-    table: { ...cache.table, rates: { ...cache.table.rates, ...table.rates } },
+    table: { ...table, rates: { ...cache.table.rates, ...table.rates } },
     requested: [],
     expiresAt: cache.expiresAt
   };
