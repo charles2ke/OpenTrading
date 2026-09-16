@@ -4,7 +4,7 @@ export const MAX_FX_CURRENCIES = 25;
 const CURRENCY_PATTERN = /^[A-Z]{3}$/;
 
 export function normalizeCurrency(value) {
-  const currency = typeof value === "string" ? value.trim().toUpperCase() : "";
+  const currency = typeof value === "string" ? value.replace(/[\s-]/g, "").toUpperCase() : "";
   return CURRENCY_PATTERN.test(currency) ? currency : "";
 }
 

@@ -13,6 +13,7 @@ const table = normalizeRateTable({ base: "usd", asOf: "2026-01-05T09:00:00.000Z"
 
 test("normalizes ISO 4217 currency codes", () => {
   assert.equal(normalizeCurrency(" eur "), "EUR");
+  assert.equal(normalizeCurrency("E-U-R"), "EUR");
   assert.equal(normalizeCurrency("EURO"), "");
   assert.equal(normalizeCurrency(42), "");
   assert.equal(BASE_CURRENCY, "USD");
