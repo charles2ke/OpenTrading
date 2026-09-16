@@ -7,7 +7,7 @@ const IBAN_PATTERN = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/;
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const INDIAN_ACCOUNT_PATTERN = /^[0-9]{9,18}$/;
 const BIC_PATTERN = /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
-const CURRENCY_FORMATTING_PATTERN = /[\s-]/g;
+const COMPACT_FORMATTING_PATTERN = /[\s-]/g;
 const ZERO_DECIMAL_CURRENCIES = new Set(["JPY"]);
 const SEPA_COUNTRIES = new Set([
   "AD", "AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GB", "GR", "HR", "HU", "IE",
@@ -15,11 +15,12 @@ const SEPA_COUNTRIES = new Set([
 ]);
 
 export function normalizeBankIdentifier(value) {
-  return typeof value === "string" ? value.replace(/[\s-]/g, "").toUpperCase() : "";
+  return typeof value === "string" ? value.replace(COMPACT_FORMATTING_PATTERN, "").toUpperCase() : "";
 }
 
+/** Normalizes transfer currency input before FX enforces the ISO currency shape. */
 export function normalizeTransferCurrency(value) {
-  return typeof value === "string" ? value.replace(CURRENCY_FORMATTING_PATTERN, "").toUpperCase() : "";
+  return typeof value === "string" ? value.replace(COMPACT_FORMATTING_PATTERN, "").toUpperCase() : "";
 }
 
 function ibanChecksum(iban) {
