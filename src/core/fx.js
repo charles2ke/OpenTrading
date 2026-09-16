@@ -25,7 +25,7 @@ export function normalizeRateTable(raw, fallbackBase = BASE_CURRENCY) {
   for (const [currency, value] of Object.entries(raw?.rates ?? {})) {
     const code = normalizeCurrency(currency);
     const rate = positiveRate(value);
-    if (code && rate) rates[code] = rate;
+    if (code && code !== base && rate) rates[code] = rate;
   }
   return { base, asOf: normalizeTimestamp(raw?.asOf), rates };
 }

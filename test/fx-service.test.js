@@ -78,6 +78,34 @@ test("converts amounts and exposes raw rates from one cached response", async ()
   assert.equal(responses, 2);
 });
 
+test("fetches again when the cache lacks a requested currency", async () => {
+  const payloads = [
+    { source: "USD", timestamp: 1767603600, quotes: { USDEUR: 0.9 } },
+    { source: "USD", timestamp: 1767603600, quotes: { USDGBP: 0.8 } }
+  ];
+  const { request, calls } = stubRequest(() => jsonResponse(payloads.shift()));
+  const service = createFxService(environment, request);
+
+  assert.deepEqual((await service.rates(["EUR"])).rates, { USD: 1, EUR: 0.9 });
+  assert.equal(await service.rate("GBP", "USD"), 1 / 0.8);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].url, "https://api.exchangerate.host/live?access_key=key-123&source=USD&currencies=GBP%2CUSD");
+});
+
+test("reuses only broad cache entries for broad rate requests", async () => {
+  const payloads = [
+    { source: "USD", timestamp: 1767603600, quotes: { USDEUR: 0.9 } },
+    { source: "USD", timestamp: 1767603600, quotes: { USDEUR: 0.9, USDGBP: 0.8 } }
+  ];
+  const { request, calls } = stubRequest(() => jsonResponse(payloads.shift()));
+  const service = createFxService(environment, request);
+
+  await service.rates(["EUR"]);
+  assert.deepEqual((await service.rates()).rates, { USD: 1, EUR: 0.9, GBP: 0.8 });
+  assert.deepEqual((await service.rates()).rates, { USD: 1, EUR: 0.9, GBP: 0.8 });
+  assert.equal(calls.length, 2);
+});
+
 test("rejects insecure base URLs, failed requests, and malformed payloads", async () => {
   const insecure = new FxService({ apiKey: "key", provider: "exchangerate", baseUrl: "http://rates.example.com", base: "USD" });
   await assert.rejects(insecure.rates(), /HTTPS/);

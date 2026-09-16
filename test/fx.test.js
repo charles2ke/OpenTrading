@@ -26,6 +26,7 @@ test("normalizes a rate table and drops invalid entries", () => {
   const fallback = normalizeRateTable({ rates: { EUR: 0, GB: 1, CHF: "abc", CAD: 1.4 } }, "gbp");
   assert.equal(fallback.base, "GBP");
   assert.deepEqual(fallback.rates, { GBP: 1, CAD: 1.4 });
+  assert.deepEqual(normalizeRateTable({ base: "USD", rates: { USD: 0.9, EUR: 0.8 } }).rates, { USD: 1, EUR: 0.8 });
   assert.ok(!Number.isNaN(Date.parse(fallback.asOf)));
   assert.equal(normalizeRateTable(null, "dollars"), null);
   assert.deepEqual(normalizeRateTable({ base: "USD" }).rates, { USD: 1 });

@@ -60,6 +60,12 @@ function endpoint(baseUrl, path) {
   return url;
 }
 
+function hasCachedRates(cache, requested, now) {
+  if (!cache || cache.expiresAt <= now) return false;
+  if (requested.length === 0) return cache.requested.length === 0;
+  return requested.every((currency) => Object.hasOwn(cache.table.rates, currency));
+}
+
 export class FxService {
   constructor(settings, request = fetch, now = () => Date.now()) {
     this.settings = settings;
@@ -75,7 +81,7 @@ export class FxService {
   async rates(currencies = []) {
     if (!this.isConfigured()) throw new Error("Exchange rates are not configured.");
     const requested = [...new Set(currencies.map((currency) => normalizeCurrency(currency)).filter(Boolean))];
-    if (this.cache && this.cache.expiresAt > this.now()) return this.cache.table;
+    if (hasCachedRates(this.cache, requested, this.now())) return this.cache.table;
     const provider = FX_PROVIDERS[this.settings.provider];
     const url = endpoint(this.settings.baseUrl, provider.path);
     for (const [key, value] of Object.entries(provider.query(this.settings.apiKey, this.settings.base, requested))) {
@@ -89,7 +95,7 @@ export class FxService {
     if (!response.ok) throw new Error(`Exchange rate request failed with status ${response.status}.`);
     const table = normalizeRateTable(provider.parse(await response.json(), this.settings.base), this.settings.base);
     if (!table || Object.keys(table.rates).length < 2) throw new Error("Exchange rates were malformed.");
-    this.cache = { table, expiresAt: this.now() + CACHE_TTL_MS };
+    this.cache = { table, requested, expiresAt: this.now() + CACHE_TTL_MS };
     return table;
   }
 
