@@ -69,14 +69,9 @@ function hasCachedRates(cache, requested, now) {
   return requested.every((currency) => Object.hasOwn(cache.table.rates, currency));
 }
 
-function mergeCache(cache, table, requested, now) {
-  if (!cache || cache.expiresAt <= now) return { table, requested };
-  return {
-    table: { ...table, rates: { ...cache.table.rates, ...table.rates } },
-    requested: cache.requested.length === 0 || requested.length === 0
-      ? []
-      : [...new Set([...cache.requested, ...requested])]
-  };
+function shouldReplaceCache(cache, requested, now) {
+  if (!cache || cache.expiresAt <= now) return true;
+  return requested.length === 0 || cache.requested.length > 0;
 }
 
 export class FxService {
@@ -108,9 +103,10 @@ export class FxService {
     if (!response.ok) throw new Error(`Exchange rate request failed with status ${response.status}.`);
     const table = normalizeRateTable(provider.parse(await response.json(), this.settings.base), this.settings.base);
     if (!table || Object.keys(table.rates).length < 2) throw new Error("Exchange rates were malformed.");
-    const merged = mergeCache(this.cache, table, requested, this.now());
-    this.cache = { ...merged, expiresAt: this.now() + CACHE_TTL_MS };
-    return merged.table;
+    if (shouldReplaceCache(this.cache, requested, this.now())) {
+      this.cache = { table, requested, expiresAt: this.now() + CACHE_TTL_MS };
+    }
+    return table;
   }
 
   async convert(amount, from, to) {

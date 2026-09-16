@@ -273,7 +273,7 @@ function handleFxApi(request, response, requestUrl) {
 
 async function transferCashRate(currency) {
   const from = normalizeCurrency(currency);
-  if (!fxService.isConfigured() || from === BASE_CURRENCY) return 1;
+  if (!fxService.isConfigured() || !from || from === BASE_CURRENCY) return 1;
   const rate = await fxService.rate(from, BASE_CURRENCY);
   if (!rate) throw new Error("Unable to convert this currency right now.");
   return rate;
