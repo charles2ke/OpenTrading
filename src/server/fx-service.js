@@ -62,6 +62,7 @@ function endpoint(baseUrl, path) {
 
 function hasCachedRates(cache, requested, now) {
   if (!cache || cache.expiresAt <= now) return false;
+  // A broad request needs the provider's full table, so a narrowed cache cannot satisfy it.
   if (requested.length === 0) return cache.requested.length === 0;
   return requested.every((currency) => Object.hasOwn(cache.table.rates, currency));
 }
