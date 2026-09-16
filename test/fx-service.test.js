@@ -106,6 +106,20 @@ test("reuses only broad cache entries for broad rate requests", async () => {
   assert.equal(calls.length, 2);
 });
 
+test("keeps broad cache coverage after a narrow refresh", async () => {
+  const payloads = [
+    { source: "USD", timestamp: 1767603600, quotes: { USDEUR: 0.9, USDGBP: 0.8 } },
+    { source: "USD", timestamp: 1767603600, quotes: { USDCHF: 0.85 } }
+  ];
+  const { request, calls } = stubRequest(() => jsonResponse(payloads.shift()));
+  const service = createFxService(environment, request);
+
+  await service.rates();
+  assert.deepEqual((await service.rates(["CHF"])).rates, { USD: 1, EUR: 0.9, GBP: 0.8, CHF: 0.85 });
+  assert.deepEqual((await service.rates()).rates, { USD: 1, EUR: 0.9, GBP: 0.8, CHF: 0.85 });
+  assert.equal(calls.length, 2);
+});
+
 test("rejects insecure base URLs, failed requests, and malformed payloads", async () => {
   const insecure = new FxService({ apiKey: "key", provider: "exchangerate", baseUrl: "http://rates.example.com", base: "USD" });
   await assert.rejects(insecure.rates(), /HTTPS/);

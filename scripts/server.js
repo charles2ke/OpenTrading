@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
-import { applyTransfer, SUPPORTED_TRANSFER_CURRENCIES } from "../src/core/banking.js";
+import { applyTransfer, validateTransfer } from "../src/core/banking.js";
 import { BASE_CURRENCY, normalizeCurrency, requestedCurrencies } from "../src/core/fx.js";
 import { mergeInstitutions } from "../src/core/institutions.js";
 import { MAX_QUOTE_SYMBOLS, mergeQuotes } from "../src/core/quotes.js";
@@ -273,7 +273,6 @@ function handleFxApi(request, response, requestUrl) {
 
 async function transferCashRate(currency) {
   const from = normalizeCurrency(currency);
-  if (!from || !SUPPORTED_TRANSFER_CURRENCIES.includes(from)) return null;
   if (!fxService.isConfigured() || from === BASE_CURRENCY) return 1;
   const rate = await fxService.rate(from, BASE_CURRENCY);
   if (!rate) throw new Error("Unable to convert this currency right now.");
@@ -343,6 +342,11 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
     const { connectionId, transfer } = await readJson(request);
     if (!await connections.owns(ownerId, connectionId)) return sendJson(response, 404, { error: "Bank connection not found." });
     const portfolio = await dataStore.portfolio.find(ownerId) ?? createPortfolio();
+    const validationError = validateTransfer(portfolio, transfer);
+    if (validationError) {
+      await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: validationError } });
+      return sendJson(response, 422, { error: validationError });
+    }
     let cashRate;
     try {
       cashRate = await transferCashRate(transfer?.currency);
@@ -350,12 +354,12 @@ async function handleBankingApi(request, response, pathname, requestUrl) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: "exchange-rate-unavailable" } });
       return sendJson(response, 502, { error: "Unable to convert this currency right now." });
     }
-    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer, cashRate ?? 1);
+    const result = await bankService.initiateTransfer(connectionId, portfolio, transfer, cashRate);
     if (result.error) {
       await auditActivity(auditRepository, { action: "bank.transfer", actor: ownerId, status: "failure", metadata: { reason: result.error } });
       return sendJson(response, 422, { error: result.error });
     }
-    const settled = applyTransfer(portfolio, transfer, cashRate ?? 1);
+    const settled = applyTransfer(portfolio, transfer, cashRate);
     await dataStore.portfolio.save(ownerId, settled.portfolio);
     await auditActivity(auditRepository, {
       action: "bank.transfer",
