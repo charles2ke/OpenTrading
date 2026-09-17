@@ -98,11 +98,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           pattern: opentrading-*
           merge-multiple: true
           path: release
       - name: Ensure release can receive assets
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -152,6 +154,7 @@ jobs:
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].id" >"${asset_ids_file}"
           xargs -r -I {} -P 4 gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/{}" <"${asset_ids_file}"
       - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           draft: true
           generate_release_notes: true
