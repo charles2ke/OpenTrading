@@ -150,11 +150,7 @@ jobs:
 
           asset_ids_file="$(mktemp)"
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].id" >"${asset_ids_file}"
-          while read -r asset_id; do
-            if [ -n "${asset_id}" ]; then
-              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
-            fi
-          done <"${asset_ids_file}"
+          xargs -r -I {} -P 4 gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/{}" <"${asset_ids_file}"
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
@@ -167,6 +163,7 @@ jobs:
             release/latest.yml
             release/latest-mac.yml
       - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
