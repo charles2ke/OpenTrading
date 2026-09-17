@@ -102,8 +102,72 @@ jobs:
           pattern: opentrading-*
           merge-multiple: true
           path: release
+      - name: Ensure release can receive assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          release_json_file=""
+          asset_ids_file=""
+          cleanup() {
+            rm -f "${release_json_file}" "${asset_ids_file}"
+          }
+          trap cleanup EXIT
+
+          api_url="${GITHUB_API_URL:-https://api.github.com}"
+          release_json_file="$(mktemp)"
+          release_status="$(
+            curl --silent --show-error --location \
+              --write-out "%{http_code}" \
+              --output "${release_json_file}" \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${api_url}/repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+          )"
+          if [ "${release_status}" = "404" ]; then
+            exit 0
+          fi
+          if [ "${release_status}" != "200" ]; then
+            cat "${release_json_file}" >&2
+            exit 1
+          fi
+
+          release_json="$(cat "${release_json_file}")"
+          is_draft="$(jq -r ".draft" <<<"${release_json}")"
+          release_id="$(jq -r ".id" <<<"${release_json}")"
+          release_url="$(jq -r ".html_url" <<<"${release_json}")"
+          if [ "${is_draft}" != "true" ]; then
+            echo "::error title=Release already published::${GITHUB_REF_NAME} already has a published release at ${release_url}. Published immutable releases cannot receive uploaded assets; delete that release and rerun this workflow, or let this workflow create and publish the release from a tag push."
+            exit 1
+          fi
+
+          asset_ids_file="$(mktemp)"
+          if ! gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].id" >"${asset_ids_file}"; then
+            echo "::error title=Draft asset lookup failed::Could not list existing draft release assets."
+            exit 1
+          fi
+          delete_failed=0
+          while read -r asset_id; do
+            if [ -n "${asset_id}" ]; then
+              echo "Deleting stale draft release asset ${asset_id}"
+              if ! gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"; then
+                echo "::warning title=Draft asset cleanup failed::Failed to delete stale draft release asset ${asset_id}"
+                delete_failed=1
+              fi
+            fi
+          done <"${asset_ids_file}"
+          if [ "${delete_failed}" -ne 0 ]; then
+            echo "::error title=Draft asset cleanup incomplete::Could not delete all stale draft release assets."
+            exit 1
+          fi
       - uses: softprops/action-gh-release@v2
         with:
+          draft: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             release/*.exe
             release/*.dmg
@@ -111,3 +175,47 @@ jobs:
             release/*.blockmap
             release/latest.yml
             release/latest-mac.yml
+      - name: Verify draft release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          expected_assets_file="$(mktemp)"
+          actual_assets_file="$(mktemp)"
+          missing_assets_file="$(mktemp)"
+          cleanup() {
+            rm -f "${expected_assets_file}" "${actual_assets_file}" "${missing_assets_file}"
+          }
+          trap cleanup EXIT
+
+          find release -maxdepth 1 -type f \( \
+            -name "*.exe" -o \
+            -name "*.dmg" -o \
+            -name "*.zip" -o \
+            -name "*.blockmap" -o \
+            -name "latest.yml" -o \
+            -name "latest-mac.yml" \
+          \) -printf "%f\n" | sort >"${expected_assets_file}"
+
+          if [ ! -s "${expected_assets_file}" ]; then
+            echo "::error title=No release assets::No downloaded release assets matched the upload patterns."
+            exit 1
+          fi
+
+          release_id="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" --jq ".id")"
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].name" |
+            sort >"${actual_assets_file}"
+
+          comm -23 "${expected_assets_file}" "${actual_assets_file}" >"${missing_assets_file}"
+          if [ -s "${missing_assets_file}" ]; then
+            echo "::error title=Missing release assets::The draft release is missing uploaded assets:"
+            cat "${missing_assets_file}" >&2
+            exit 1
+          fi
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${GITHUB_REF_NAME}" --draft=false
