@@ -109,7 +109,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" 2>/dev/null || true)"
+          release_json_file="$(mktemp)"
+          release_error_file="$(mktemp)"
+          if ! gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" >"${release_json_file}" 2>"${release_error_file}"; then
+            if grep -q "HTTP 404" "${release_error_file}"; then
+              exit 0
+            fi
+
+            cat "${release_error_file}" >&2
+            exit 1
+          fi
+
+          release_json="$(cat "${release_json_file}")"
           if [ -z "${release_json}" ]; then
             exit 0
           fi
@@ -122,10 +133,13 @@ jobs:
             exit 1
           fi
 
-          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].id" |
-            while read -r asset_id; do
+          asset_ids_file="$(mktemp)"
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets" --jq ".[].id" >"${asset_ids_file}"
+          while read -r asset_id; do
+            if [ -n "${asset_id}" ]; then
               gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
-            done
+            fi
+          done <"${asset_ids_file}"
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
