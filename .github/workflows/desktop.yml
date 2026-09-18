@@ -103,6 +103,7 @@ jobs:
           merge-multiple: true
           path: release
       - name: Ensure release can receive assets
+        id: release_state
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -116,6 +117,13 @@ jobs:
           }
           trap cleanup EXIT
 
+          write_outputs() {
+            {
+              echo "upload_assets=$1"
+              echo "publish_release=$2"
+            } >>"${GITHUB_OUTPUT}"
+          }
+
           api_url="${GITHUB_API_URL:-https://api.github.com}"
           release_json_file="$(mktemp)"
           release_status="$(
@@ -128,6 +136,7 @@ jobs:
               "${api_url}/repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
           )"
           if [ "${release_status}" = "404" ]; then
+            write_outputs true true
             exit 0
           fi
           if [ "${release_status}" != "200" ]; then
@@ -137,11 +146,19 @@ jobs:
 
           release_json="$(cat "${release_json_file}")"
           is_draft="$(jq -r ".draft" <<<"${release_json}")"
+          is_immutable="$(jq -r ".immutable // false" <<<"${release_json}")"
           release_id="$(jq -r ".id" <<<"${release_json}")"
           release_url="$(jq -r ".html_url" <<<"${release_json}")"
+
           if [ "${is_draft}" != "true" ]; then
-            echo "::error title=Release already published::${GITHUB_REF_NAME} already has a published release at ${release_url}. Published immutable releases cannot receive uploaded assets; delete that release and rerun this workflow, or let this workflow create and publish the release from a tag push."
-            exit 1
+            if [ "${is_immutable}" = "true" ]; then
+              echo "::warning title=Release already published::${GITHUB_REF_NAME} already has a published immutable release at ${release_url}. Immutable releases cannot receive uploaded assets, so the packaged apps remain available only as workflow artifacts. Delete that release and rerun this workflow to attach them."
+              write_outputs false false
+              exit 0
+            fi
+            echo "${GITHUB_REF_NAME} already has a published release at ${release_url}; uploading assets to it without changing its published state."
+            write_outputs true false
+            exit 0
           fi
 
           asset_ids_file="$(mktemp)"
@@ -163,9 +180,11 @@ jobs:
             echo "::error title=Draft asset cleanup incomplete::Could not delete all stale draft release assets."
             exit 1
           fi
+          write_outputs true true
       - uses: softprops/action-gh-release@v2
+        if: steps.release_state.outputs.upload_assets == 'true'
         with:
-          draft: true
+          draft: ${{ steps.release_state.outputs.publish_release == 'true' }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
@@ -175,7 +194,8 @@ jobs:
             release/*.blockmap
             release/latest.yml
             release/latest-mac.yml
-      - name: Verify draft release assets
+      - name: Verify release assets
+        if: steps.release_state.outputs.upload_assets == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -210,11 +230,12 @@ jobs:
 
           comm -23 "${expected_assets_file}" "${actual_assets_file}" >"${missing_assets_file}"
           if [ -s "${missing_assets_file}" ]; then
-            echo "::error title=Missing release assets::The draft release is missing uploaded assets:"
+            echo "::error title=Missing release assets::The release is missing uploaded assets:"
             cat "${missing_assets_file}" >&2
             exit 1
           fi
       - name: Publish release
+        if: steps.release_state.outputs.publish_release == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
