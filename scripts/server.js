@@ -22,6 +22,7 @@ const types = { ".css": "text/css; charset=utf-8", ".html": "text/html; charset=
 const mongoUri = process.env.MONGODB_URI;
 const dataStorePromise = mongoUri
   ? connectDataStore(mongoUri, process.env.MONGODB_DATABASE).catch((error) => {
+      if (error.message === "DATA_PRIVACY_KEY must be configured in production.") throw error;
       console.error("MongoDB connection failed:", error.message);
       return null;
     })
@@ -289,9 +290,10 @@ async function handleBrokerApi(request, response, pathname) {
     return sendJson(response, 405, { error: "Method not allowed." });
   }
   if (pathname !== "/api/broker/summary") return sendJson(response, 404, { error: "Broker route not found." });
+  const authService = await authServicePromise;
+  const user = await authService?.current(request.headers.cookie);
+  if (!user) return sendJson(response, 401, { error: "Sign in to view the Trading 212 account." });
   if (!brokerService.isConfigured()) return sendJson(response, 503, { error: "Trading 212 is not configured." });
-  const ownerId = await resolveOwnerId(request);
-  if (!ownerId) return sendJson(response, 400, { error: "Invalid client ID." });
   return sendJson(response, 200, await brokerService.summary());
 }
 

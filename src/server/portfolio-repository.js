@@ -206,6 +206,9 @@ export class AuditRepository {
 
 export async function connectDataStore(uri, databaseName = "opentrading", Client = MongoClient) {
   const privacyKey = process.env.DATA_PRIVACY_KEY || DEFAULT_PRIVACY_KEY;
+  if (!process.env.DATA_PRIVACY_KEY && process.env.NODE_ENV === "production") {
+    throw new Error("DATA_PRIVACY_KEY must be configured in production.");
+  }
   if (!process.env.DATA_PRIVACY_KEY && process.env.NODE_ENV !== "test") {
     console.warn("DATA_PRIVACY_KEY is not configured. Using default development key; set DATA_PRIVACY_KEY for production.");
   }

@@ -34,7 +34,7 @@ flowchart LR
 - `banking.html` and `src/banking.js` render the banking page, which shows the available cash balance and reuses `src/banking-ui.js`.
 - `src/banking-ui.js` renders the bank connections panel, the bank consent dialog, and the transfer dialog, and talks to the `/api/banking/*` endpoints.
 - `src/core/storage.js` is the persistence adapter. It reads and writes the local portfolio and client identifier, then synchronizes the portfolio with the optional server API.
-- `public/manifest.webmanifest` and `public/service-worker.js` make the site installable. The service worker precaches essential application assets and caches successful same-origin GET responses for offline fallback.
+- `public/manifest.webmanifest` and `public/service-worker.js` make the site installable. The service worker precaches essential application assets and caches successful same-origin GET responses for offline fallback. Requests to `/api/` and `/auth/`, and any response marked `Cache-Control: no-store`, are never cached, so account, banking, and audit data stays out of the offline cache.
 
 The client starts with a local portfolio. When remote persistence is available, it loads the remote portfolio after the initial render and sends successful order updates to `PUT /api/portfolio`. A missing or unavailable remote store leaves the local portfolio in place.
 
@@ -57,7 +57,7 @@ The client starts with a local portfolio. When remote persistence is available, 
 | `DELETE /api/banking/connections/{connectionId}` | Removes a bank connection. |
 | `POST /api/banking/transfers` | Validates and submits an ISO 20022 transfer, then settles the cash balance, converting foreign-currency amounts with live exchange rates when they are configured. |
 | `GET /api/fx` | Returns reference exchange rates for the optional `currencies` list, relative to the configured base currency. Returns `503` without an exchange-rate key and `502` when the provider is unreachable. |
-| `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value for the authenticated caller. Requires a session or `X-Client-ID` header (`400` without one); returns `503` without an API key. |
+| `GET /api/broker/summary` | Returns the read-only Trading 212 cash balance, positions, and account value for the deployment's configured account. Requires a signed-in session (`401` without one); returns `503` without an API key. |
 | `GET /auth/session` | Returns the signed-in user, if present. |
 | `GET /auth/google` and `GET /auth/microsoft` | Starts the corresponding sign-in flow. |
 | `GET /auth/{provider}/callback` | Completes the provider callback. |
