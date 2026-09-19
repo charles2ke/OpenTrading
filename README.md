@@ -123,7 +123,7 @@ MONGODB_URI='mongodb://localhost:27017' MONGODB_DATABASE='opentrading' npm run d
 ```
 
 Never expose `MONGODB_URI` to browser code or commit it to the repository.
-The **Audit** page shows the signed-in user's own audit events and can export the filtered rows as CSV or JSON. MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`).
+The **Audit** page shows the signed-in user's own audit events and can export the filtered rows as CSV or JSON. MongoDB records use pseudonymous owner identifiers, scrub personally identifiable audit metadata, and apply retention for audit events (override with `AUDIT_RETENTION_DAYS` and `DATA_PRIVACY_KEY`). `DATA_PRIVACY_KEY` is required when `NODE_ENV=production`; the server refuses to start with the built-in development key.
 
 ### Authentication
 
@@ -185,7 +185,7 @@ The Banking page also shows a read-only view of a Trading 212 account (cash, ope
 TRADING212_API_KEY='...' TRADING212_ENVIRONMENT='demo' npm run dev
 ```
 
-`TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. `GET /api/broker/summary` requires the caller to be signed in or send an `X-Client-ID` header, same as the banking and portfolio routes. Without a key, it returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
+`TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. Because the summary comes from the deployment's own server-side API key, `GET /api/broker/summary` requires a signed-in session and returns `401` otherwise. Without a key, it returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
 
 ### Windows desktop app
 

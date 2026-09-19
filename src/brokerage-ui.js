@@ -1,5 +1,3 @@
-import { getClientId } from "./core/storage.js";
-
 const byId = (id) => document.getElementById(id);
 
 function escapeHtml(value) {
@@ -17,12 +15,14 @@ export async function initBrokerage() {
   const status = byId("brokerage-status");
   const list = byId("brokerage-positions");
   try {
-    const response = await fetch("./api/broker/summary", {
-      credentials: "same-origin",
-      headers: { "X-Client-ID": getClientId(localStorage, crypto.randomUUID.bind(crypto)) }
-    });
+    const response = await fetch("./api/broker/summary", { credentials: "same-origin" });
     if (response.status === 503) {
       status.textContent = "Trading 212 is not configured on this deployment.";
+      list.innerHTML = "";
+      return;
+    }
+    if (response.status === 401) {
+      status.textContent = "Sign in to view the Trading 212 account.";
       list.innerHTML = "";
       return;
     }

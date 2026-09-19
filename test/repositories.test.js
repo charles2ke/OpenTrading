@@ -247,7 +247,7 @@ test("connectDataStore warns when privacy key is missing outside tests", async (
   const previousNodeEnv = process.env.NODE_ENV;
   const messages = [];
   process.env.DATA_PRIVACY_KEY = "";
-  process.env.NODE_ENV = "production";
+  process.env.NODE_ENV = "development";
   const previousWarn = console.warn;
   console.warn = (...args) => messages.push(args.join(" "));
   class FakeClient {
@@ -262,6 +262,28 @@ test("connectDataStore warns when privacy key is missing outside tests", async (
     assert.match(messages[0], /DATA_PRIVACY_KEY is not configured/);
   } finally {
     console.warn = previousWarn;
+    process.env.DATA_PRIVACY_KEY = previousPrivacyKey;
+    process.env.NODE_ENV = previousNodeEnv;
+  }
+});
+
+test("connectDataStore refuses to start in production without a privacy key", async () => {
+  const previousPrivacyKey = process.env.DATA_PRIVACY_KEY;
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.DATA_PRIVACY_KEY = "";
+  process.env.NODE_ENV = "production";
+  class FakeClient {
+    async connect() {}
+    db() {
+      return { collection: () => collection() };
+    }
+  }
+  try {
+    await assert.rejects(
+      connectDataStore("mongodb://example", "database", FakeClient),
+      /DATA_PRIVACY_KEY must be configured in production/
+    );
+  } finally {
     process.env.DATA_PRIVACY_KEY = previousPrivacyKey;
     process.env.NODE_ENV = previousNodeEnv;
   }
