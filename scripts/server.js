@@ -22,6 +22,7 @@ const types = { ".css": "text/css; charset=utf-8", ".html": "text/html; charset=
 const mongoUri = process.env.MONGODB_URI;
 const dataStorePromise = mongoUri
   ? connectDataStore(mongoUri, process.env.MONGODB_DATABASE).catch((error) => {
+      if (error.message === "DATA_PRIVACY_KEY must be configured in production.") throw error;
       console.error("MongoDB connection failed:", error.message);
       return null;
     })
