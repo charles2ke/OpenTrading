@@ -315,9 +315,9 @@ test("shows the connected Trading 212 account", async ({ page }) => {
   await expect(page.getByText("AAPL_US_EQ")).toBeVisible();
 });
 
-test("explains when Trading 212 is not configured", async ({ page }) => {
+test("requires sign-in before checking Trading 212 configuration", async ({ page }) => {
   await page.goto("/banking.html");
-  await expect(page.getByText("Trading 212 is not configured on this deployment.")).toBeVisible();
+  await expect(page.getByText("Sign in to view the Trading 212 account.")).toBeVisible();
 });
 
 test.describe("audit log", () => {

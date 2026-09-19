@@ -290,10 +290,10 @@ async function handleBrokerApi(request, response, pathname) {
     return sendJson(response, 405, { error: "Method not allowed." });
   }
   if (pathname !== "/api/broker/summary") return sendJson(response, 404, { error: "Broker route not found." });
-  if (!brokerService.isConfigured()) return sendJson(response, 503, { error: "Trading 212 is not configured." });
   const authService = await authServicePromise;
   const user = await authService?.current(request.headers.cookie);
   if (!user) return sendJson(response, 401, { error: "Sign in to view the Trading 212 account." });
+  if (!brokerService.isConfigured()) return sendJson(response, 503, { error: "Trading 212 is not configured." });
   return sendJson(response, 200, await brokerService.summary());
 }
 
