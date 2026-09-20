@@ -10,6 +10,19 @@ New to investing? Read the [beginner's investor concepts guide](docs/investor-co
 
 See the [architecture documentation](docs/architecture.md) for the client, server, data, authentication, and deployment design.
 
+## Contents
+
+- [Apps](#apps)
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Screenshots](#screenshots)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Quality](#quality)
+- [Deployment](#deployment)
+- [Security](#security)
+- [Privacy and terms](#privacy-and-terms)
+
 ## Apps
 
 - **Website:** responsive desktop and mobile experience.
@@ -37,6 +50,19 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Setup page with installation steps for every platform and a first-run account checklist
 - Audit log page to review your recorded account activity and download it as CSV or JSON
 - Restrictive Content Security Policy and no analytics or remote scripts
+
+## Quick start
+
+Requires Node.js 22 or newer.
+
+```bash
+npm ci
+npm run dev
+```
+
+Open <http://127.0.0.1:4173>. `npm run dev` builds the site with Vite and serves it with the bundled Node server (`scripts/server.js`); set `PORT` to listen on another port.
+
+No configuration is required for the paper-trading demo: without provider keys the app runs on bundled illustrative prices and stores the portfolio on the device. See [Configuration](#configuration) to connect MongoDB, sign-in, banking, market data, exchange rates, news, or Trading 212.
 
 ## Screenshots
 
@@ -103,16 +129,23 @@ Indian rupee transfers switch the dialog to account number and IFSC fields and s
 | --- | --- |
 | ![Audit log page listing recorded account activity with filters and download buttons](e2e/screenshots/audit-log-desktop.png) | ![Audit log page on mobile](e2e/screenshots/audit-log-mobile.png) |
 
-## Development
+## Configuration
 
-Requires Node.js 22 or newer.
+Every integration is optional and disabled until its key is set. Keys stay server-side; the browser only calls the app's own origin. When a provider is not configured its API route returns `503` and the UI explains that the feature is unavailable.
 
-```bash
-npm ci
-npm run dev
-```
-
-Open <http://127.0.0.1:4173>.
+| Variable | Feature | Default |
+| --- | --- | --- |
+| `PORT` | Server port | `4173` |
+| `APP_BASE_URL` | Public base URL used for OAuth callbacks and URL parsing | `http://127.0.0.1:<PORT>` |
+| `MONGODB_URI`, `MONGODB_DATABASE` | Server-side persistence and audit log | on-device storage |
+| `DATA_PRIVACY_KEY`, `AUDIT_RETENTION_DAYS` | Audit pseudonymisation and retention | development key, `365` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | disabled |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` | Microsoft sign-in | disabled, tenant `common` |
+| `OPEN_BANKING_API_KEY`, `OPEN_BANKING_API_URL`, `OPEN_BANKING_REDIRECT_URI` | Bank connections and transfers | disabled |
+| `MARKET_DATA_API_KEY`, `MARKET_DATA_PROVIDER`, `MARKET_DATA_API_URL` | Live quotes | illustrative prices, `finnhub` |
+| `FX_RATES_API_KEY`, `FX_RATES_PROVIDER`, `FX_RATES_API_URL`, `FX_RATES_BASE` | Currency conversion | 1:1 settlement, `exchangerate`, `USD` |
+| `NEWSAPI_KEY`, `TWITTER_BEARER_TOKEN` | News feed sources | disabled |
+| `TRADING212_API_KEY`, `TRADING212_ENVIRONMENT`, `TRADING212_API_URL` | Read-only brokerage view | disabled, `live` |
 
 ### MongoDB
 
@@ -177,6 +210,16 @@ FX_RATES_API_KEY='...' FX_RATES_PROVIDER='exchangerate' npm run dev
 
 `FX_RATES_PROVIDER` accepts `exchangerate` (exchangerate.host, the default) or `openexchangerates`, `FX_RATES_API_URL` can override the base URL, and `FX_RATES_BASE` changes the base currency (`USD` by default). Rates are cached for 10 minutes and the key stays server-side. Without a key, `GET /api/fx` returns `503` and transfer amounts settle one-to-one, exactly as before.
 
+### News feed
+
+The dashboard news panel needs at least one source. Headlines are cached for five minutes and merged per watched symbol.
+
+```bash
+NEWSAPI_KEY='...' TWITTER_BEARER_TOKEN='...' npm run dev
+```
+
+Either variable is enough. Without both, `GET /api/news` returns `503` and the panel shows "News feed unavailable" while the rest of the dashboard keeps working.
+
 ### Trading 212
 
 The Banking page also shows a read-only view of a Trading 212 account (cash, open positions, and account value). Create an API key in the Trading 212 app and keep it server-side:
@@ -187,16 +230,32 @@ TRADING212_API_KEY='...' TRADING212_ENVIRONMENT='demo' npm run dev
 
 `TRADING212_ENVIRONMENT` accepts `live` (default) or `demo`, and `TRADING212_API_URL` can override the base URL. Because the summary comes from the deployment's own server-side API key, `GET /api/broker/summary` requires a signed-in session and returns `401` otherwise. Without a key, it returns `503` and the page explains that Trading 212 is not configured. OpenTrading never places real orders through the API.
 
-### Windows desktop app
+### Desktop apps
 
 The desktop app is an Electron shell (`desktop/main.cjs`) around the same reviewed build. It serves the build over a secure `app://` scheme with context isolation, a sandboxed renderer, no Node integration, and navigation restricted to the packaged origin.
 
 ```bash
 npm run desktop        # build the web assets and run the app locally
 npm run desktop:pack   # build Windows x64 and arm64 installers into release/
+npm run desktop:pack:mac  # build macOS x64 and arm64 packages into release/
 ```
 
-Packaging Windows installers must run on a Windows machine or runner.
+Packaging must run on the target platform: Windows installers on a Windows machine or runner, macOS packages on a Mac.
+
+## Project structure
+
+| Path | Contents |
+| --- | --- |
+| `index.html`, `banking.html`, `learn.html`, `setup.html`, `audit.html` | Page entry points |
+| `src/core/` | Framework-free trading, banking, FX, quotes, news, and audit logic shared by client and server |
+| `src/server/` | Server-side services: authentication, MongoDB repositories, and provider integrations |
+| `src/*.js`, `src/styles.css` | Browser controllers and styling for each page |
+| `scripts/server.js` | Node HTTP server that serves the build and the `/api/*` routes |
+| `desktop/`, `electron-builder.yml` | Electron shell and desktop packaging configuration |
+| `public/` | Static assets, web app manifest, and service worker |
+| `test/` | Node test runner unit tests |
+| `e2e/` | Playwright specs and generated screenshots |
+| `docs/` | Architecture and investor-concepts documentation |
 
 ## Quality
 
