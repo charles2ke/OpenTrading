@@ -131,7 +131,7 @@ Indian rupee transfers switch the dialog to account number and IFSC fields and s
 
 ## Configuration
 
-Every integration is optional and disabled until its key is set. Keys stay server-side; the browser only calls the app's own origin. When a provider is not configured its API route returns `503` and the UI explains that the feature is unavailable.
+Every integration is optional and disabled until its key is set. Keys stay server-side; the browser only calls the app's own origin. When a provider-dependent route is not configured, it returns `503` and the UI explains that the feature is unavailable.
 
 | Variable | Feature | Default |
 | --- | --- | --- |
