@@ -37,11 +37,12 @@ export function watchlistView(watchlist) {
 
 export function createAlert({ type, symbol = null, threshold = null, direction = "above" }) {
   if (!ALERT_TYPES.includes(type)) throw new TypeError("Unsupported alert type.");
-  if (symbol !== null && !securityBySymbol(symbol)) throw new TypeError("Unknown security.");
+  const security = symbol === null ? null : securityBySymbol(symbol);
+  if (symbol !== null && !security) throw new TypeError("Unknown security.");
   return {
-    id: `${type}:${symbol ?? "portfolio"}:${threshold ?? "event"}`,
+    id: `${type}:${security?.symbol ?? "portfolio"}:${threshold ?? "event"}`,
     type,
-    symbol: symbol === null ? null : securityBySymbol(symbol).symbol,
+    symbol: security?.symbol ?? null,
     threshold,
     direction,
     createdAt: null

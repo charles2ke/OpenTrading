@@ -42,9 +42,9 @@ export function listReports(reports, { module = null, symbol = null } = {}) {
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
-function flatten(value, prefix = "") {
+function flatten(value, prefix) {
   if (value === null || typeof value !== "object") return [[prefix, value]];
-  return Object.entries(value).flatMap(([key, entry]) => flatten(entry, prefix === "" ? key : `${prefix}.${key}`));
+  return Object.entries(value).flatMap(([key, entry]) => flatten(entry, `${prefix}.${key}`));
 }
 
 export function reportToCsv(report) {

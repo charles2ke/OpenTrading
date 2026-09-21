@@ -75,7 +75,7 @@ export function defaultDcfAssumptions(symbol) {
   return {
     revenue: data.revenue,
     revenueGrowth: data.revenueGrowth,
-    operatingMargin: data.operatingMargin ?? 15,
+    operatingMargin: data.operatingMargin,
     taxRate: 21,
     depreciationPercent,
     capexPercent: 6,
