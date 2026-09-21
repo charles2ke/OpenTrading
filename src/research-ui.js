@@ -135,7 +135,7 @@ export function initResearch() {
       ${table("Five-year forecast", ["Year", "Revenue", "EBIT", "Taxes", "NOPAT", "D&A", "CapEx", "Working capital", "Unlevered FCF"],
         result.forecast.map((row) => [row.year, number(row.revenue, 0), number(row.ebit, 0), number(row.taxes, 0), number(row.nopat, 0), number(row.depreciation, 0), number(row.capex, 0), number(row.workingCapital, 0), number(row.freeCashFlow, 0)]))}
       ${table("Scenarios", ["Scenario", "Value per share", "Upside %"],
-        runScenarios(state.assumptions).map((scenario) => [scenario.label, number(scenario.result.perpetuityGrowth.valuePerShare), number(scenario.result.perpetuityGrowth.upsidePercent, 1)]))}
+        runScenarios(state.assumptions).map((scenario) => [scenario.label, number(scenario.result.perpetuityGrowth?.valuePerShare), number(scenario.result.perpetuityGrowth?.upsidePercent, 1)]))}
       ${table("WACC × terminal growth", ["WACC %", ...sensitivity.columns.map((column) => `g ${number(column, 1)}%`)],
         sensitivity.values.map((row, index) => [number(sensitivity.rows[index], 1), ...row.map((value) => number(value))]))}
       ${table("WACC × exit multiple", ["WACC %", ...exitMatrix.columns.map((column) => `${number(column, 1)}x`)],
