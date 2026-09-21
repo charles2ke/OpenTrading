@@ -162,6 +162,10 @@ export function initResearch() {
 
   function renderTechnicals() {
     const result = analyzeTechnicals(state.symbol, { timeframe: byId("timeframe").value });
+    if (!result.valid) {
+      byId("technicals-output").innerHTML = `<p class="empty-state">${escapeHtml(result.errors.join(" "))}</p>`;
+      return;
+    }
     const indicators = result.indicators;
     byId("technicals-output").innerHTML = `
       ${table("Indicators", ["Indicator", "Value"], [
