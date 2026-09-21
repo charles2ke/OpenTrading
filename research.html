@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
+    <meta name="description" content="Institutional investment research: screening, DCF valuation, earnings, technicals, quantitative patterns, portfolio construction, risk and macro analysis.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./src/styles.css">
+    <title>Research — OpenTrading</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="./index.html" aria-label="OpenTrading home">
+          <span class="brand-mark">O</span><span>OpenTrading</span>
+        </a>
+        <nav>
+          <a class="nav-link" href="./index.html#overview"><span>⌂</span>Overview</a>
+          <a class="nav-link" href="./index.html#markets"><span>↗</span>Markets</a>
+          <a class="nav-link" href="./index.html#portfolio"><span>◫</span>Portfolio</a>
+          <a class="nav-link" href="./index.html#trade"><span>⇄</span>Trade</a>
+          <a class="nav-link active" href="./research.html"><span>🔬</span>Research</a>
+          <a class="nav-link" href="./banking.html"><span>🏦</span>Banking</a>
+          <a class="nav-link" href="./index.html#news"><span>📰</span>News</a>
+          <a class="nav-link" href="./learn.html"><span>🎓</span>Learn</a>
+          <a class="nav-link" href="./setup.html"><span>⚙</span>Setup</a>
+          <a class="nav-link" href="./audit.html"><span>🛡</span>Audit</a>
+        </nav>
+        <div class="secure-card">
+          <span class="secure-icon">◆</span>
+          <div><strong>Research data</strong><small>Calculated values are separated from interpretation</small></div>
+        </div>
+      </aside>
+
+      <main id="main">
+        <header class="topbar">
+          <button class="menu-button" type="button" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
+          <div class="search-wrap">
+            <label class="sr-only" for="global-search">Search securities</label>
+            <span>⌕</span><input id="global-search" type="search" placeholder="Search company, ticker, or exchange" autocomplete="off">
+          </div>
+          <a class="text-button" href="./index.html">← Back to dashboard</a>
+        </header>
+
+        <div class="content">
+          <div id="search-results" class="chip-row" aria-label="Search results"></div>
+
+          <section class="panel" aria-label="Company">
+            <label for="security">Security</label>
+            <select id="security"></select>
+            <div id="company-header" class="company-header"></div>
+          </section>
+
+          <div class="research-tabs" role="tablist" aria-label="Research modules">
+            <button class="research-tab active" type="button" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="discover">Screener</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="valuation">Valuation</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="earnings">Earnings</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="technicals">Technicals</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="quant">Quant</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="competition">Competition</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="dividends">Dividends</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="portfolio">Portfolio builder</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="risk">Risk</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="macro">Macro</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="watchlists">Watchlists</button>
+            <button class="research-tab" type="button" role="tab" aria-selected="false" data-tab="reports">Reports</button>
+          </div>
+
+          <section class="panel research-panel" id="panel-overview">
+            <div class="section-head"><div><p class="eyebrow">RESEARCH NOTE</p><h2>Overview</h2></div>
+              <div class="section-actions">
+                <button class="text-button" id="save-report" type="button">Save as report →</button>
+                <button class="text-button" id="export-report" type="button">Export CSV →</button>
+                <button class="text-button" id="print-report" type="button">Print / PDF →</button>
+              </div>
+            </div>
+            <ul id="overview-narrative" class="research-narrative"></ul>
+            <p id="overview-grounding" class="data-provenance"></p>
+          </section>
+
+          <section class="panel research-panel" id="panel-discover" hidden>
+            <div class="section-head"><div><p class="eyebrow">DISCOVER</p><h2>Stock screener</h2></div>
+              <div class="section-actions">
+                <button class="text-button" id="screener-export" type="button">Export CSV →</button>
+                <button class="text-button" id="screener-watch" type="button">Add results to watchlist →</button>
+              </div>
+            </div>
+            <form id="screener-form" class="inline-form">
+              <label for="screener-sector">Sector<select id="screener-sector"></select></label>
+              <label for="screener-pe">Max P/E<input id="screener-pe" type="number" step="0.1" min="0"></label>
+              <label for="screener-growth">Min revenue growth %<input id="screener-growth" type="number" step="0.1"></label>
+              <label for="screener-yield">Min dividend yield %<input id="screener-yield" type="number" step="0.1"></label>
+              <label for="screener-sort">Sort by<select id="screener-sort"></select></label>
+              <button class="primary-button" type="submit">Run screen</button>
+            </form>
+            <p id="screener-summary" role="status"></p>
+            <div id="screener-results" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-valuation" hidden>
+            <div class="section-head"><div><p class="eyebrow">VALUATION</p><h2>Discounted cash flow</h2></div></div>
+            <form id="dcf-form" class="inline-form">
+              <label for="dcf-revenue">Revenue<input id="dcf-revenue" name="revenue" type="number" step="0.1"></label>
+              <label for="dcf-growth">Revenue growth %<input id="dcf-growth" name="revenueGrowth" type="number" step="0.1"></label>
+              <label for="dcf-margin">Operating margin %<input id="dcf-margin" name="operatingMargin" type="number" step="0.1"></label>
+              <label for="dcf-tax">Tax rate %<input id="dcf-tax" name="taxRate" type="number" step="0.1"></label>
+              <label for="dcf-da">D&amp;A % of revenue<input id="dcf-da" name="depreciationPercent" type="number" step="0.1"></label>
+              <label for="dcf-capex">CapEx % of revenue<input id="dcf-capex" name="capexPercent" type="number" step="0.1"></label>
+              <label for="dcf-wc">Working capital % of revenue change<input id="dcf-wc" name="workingCapitalPercent" type="number" step="0.1"></label>
+              <label for="dcf-wacc">WACC %<input id="dcf-wacc" name="wacc" type="number" step="0.1"></label>
+              <label for="dcf-terminal">Terminal growth %<input id="dcf-terminal" name="terminalGrowth" type="number" step="0.1"></label>
+              <label for="dcf-exit">Exit multiple<input id="dcf-exit" name="exitMultiple" type="number" step="0.1"></label>
+              <label for="dcf-netdebt">Net debt<input id="dcf-netdebt" name="netDebt" type="number" step="1"></label>
+              <label for="dcf-shares">Diluted shares<input id="dcf-shares" name="dilutedShares" type="number" step="1"></label>
+              <button class="primary-button" type="submit">Recalculate</button>
+            </form>
+            <div id="dcf-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-earnings" hidden>
+            <div class="section-head"><div><p class="eyebrow">EARNINGS</p><h2>Earnings analyzer</h2></div></div>
+            <div id="earnings-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-technicals" hidden>
+            <div class="section-head"><div><p class="eyebrow">TECHNICALS</p><h2>Technical analysis</h2></div></div>
+            <label for="timeframe">Timeframe
+              <select id="timeframe">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <div id="technicals-output" class="table-wrap"></div>
+            <form id="trade-form" class="inline-form">
+              <label for="trade-entry">Entry<input id="trade-entry" type="number" step="0.01" value="230"></label>
+              <label for="trade-stop">Invalidation<input id="trade-stop" type="number" step="0.01" value="215"></label>
+              <label for="trade-target">Target<input id="trade-target" type="number" step="0.01" value="265"></label>
+              <label for="trade-capital">Capital<input id="trade-capital" type="number" step="1" value="10000"></label>
+              <button class="secondary-button" type="submit">Plan trade</button>
+            </form>
+            <p id="trade-output" role="status"></p>
+          </section>
+
+          <section class="panel research-panel" id="panel-quant" hidden>
+            <div class="section-head"><div><p class="eyebrow">QUANT</p><h2>Pattern research</h2></div></div>
+            <div id="quant-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-competition" hidden>
+            <div class="section-head"><div><p class="eyebrow">COMPETITION</p><h2>Competitive landscape</h2></div></div>
+            <div id="competition-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-dividends" hidden>
+            <div class="section-head"><div><p class="eyebrow">INCOME</p><h2>Dividend research</h2></div></div>
+            <div id="dividend-output" class="table-wrap"></div>
+            <form id="drip-form" class="inline-form">
+              <label for="drip-initial">Initial investment<input id="drip-initial" type="number" step="100" value="50000"></label>
+              <label for="drip-contribution">Annual contribution<input id="drip-contribution" type="number" step="100" value="6000"></label>
+              <label for="drip-yield">Starting yield %<input id="drip-yield" type="number" step="0.1" value="3.2"></label>
+              <label for="drip-growth">Dividend growth %<input id="drip-growth" type="number" step="0.1" value="6"></label>
+              <label for="drip-price">Price growth %<input id="drip-price" type="number" step="0.1" value="5"></label>
+              <label for="drip-reinvest">Reinvest dividends<input id="drip-reinvest" type="checkbox" checked></label>
+              <button class="secondary-button" type="submit">Simulate</button>
+            </form>
+            <div id="drip-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-portfolio" hidden>
+            <div class="section-head"><div><p class="eyebrow">CONSTRUCTION</p><h2>Portfolio builder</h2></div></div>
+            <form id="profile-form" class="inline-form">
+              <label for="profile-amount">Investment amount<input id="profile-amount" type="number" step="1000" value="250000"></label>
+              <label for="profile-horizon">Horizon (years)<input id="profile-horizon" type="number" step="1" value="15"></label>
+              <label for="profile-risk">Risk tolerance
+                <select id="profile-risk">
+                  <option value="conservative">Conservative</option>
+                  <option value="balanced" selected>Balanced</option>
+                  <option value="growth">Growth</option>
+                  <option value="aggressive">Aggressive</option>
+                </select>
+              </label>
+              <label for="profile-income">Income requirement %<input id="profile-income" type="number" step="0.1" value="2"></label>
+              <label for="profile-liquidity">Liquidity requirement %<input id="profile-liquidity" type="number" step="1" value="5"></label>
+              <label for="profile-account">Account
+                <select id="profile-account">
+                  <option value="taxable">Taxable</option>
+                  <option value="tax-advantaged">Tax-advantaged</option>
+                </select>
+              </label>
+              <label for="profile-contribution">Monthly contribution<input id="profile-contribution" type="number" step="50" value="1500"></label>
+              <button class="primary-button" type="submit">Build allocation</button>
+            </form>
+            <div id="builder-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-risk" hidden>
+            <div class="section-head"><div><p class="eyebrow">RISK</p><h2>Portfolio risk</h2></div></div>
+            <form id="holdings-form" class="inline-form">
+              <label for="holding-symbol">Ticker<input id="holding-symbol" type="text" value="MSFT" autocomplete="off"></label>
+              <label for="holding-quantity">Quantity<input id="holding-quantity" type="number" step="1" value="50"></label>
+              <button class="secondary-button" type="submit">Add holding</button>
+            </form>
+            <p id="holdings-status" role="status"></p>
+            <div id="risk-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-macro" hidden>
+            <div class="section-head"><div><p class="eyebrow">MACRO</p><h2>Macro impact</h2></div></div>
+            <div id="macro-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-watchlists" hidden>
+            <div class="section-head"><div><p class="eyebrow">MONITORING</p><h2>Watchlists and alerts</h2></div></div>
+            <div id="watchlist-output" class="table-wrap"></div>
+            <div id="alerts-output" class="table-wrap"></div>
+          </section>
+
+          <section class="panel research-panel" id="panel-reports" hidden>
+            <div class="section-head"><div><p class="eyebrow">REPORTS</p><h2>Saved research</h2></div></div>
+            <div id="reports-output" class="table-wrap"></div>
+            <p class="disclaimer">Reports keep the data snapshot, assumptions and calculation version used when they were generated.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="./src/research.js"></script>
+  </body>
+</html>

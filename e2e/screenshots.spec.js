@@ -78,6 +78,25 @@ test.describe("documentation screenshots", () => {
     await page.screenshot({ path: shot(`audit-log-${suffix}`), fullPage: true });
   });
 
+  test("captures the research workspace", async ({ page }) => {
+    const suffix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
+    await page.goto("/research.html");
+    await page.locator("#overview-narrative li").first().waitFor();
+    await page.screenshot({ path: shot(`research-overview-${suffix}`), fullPage: true });
+
+    await page.getByRole("tab", { name: "Screener" }).click();
+    await page.screenshot({ path: shot(`research-screener-${suffix}`), fullPage: true });
+
+    await page.getByRole("tab", { name: "Valuation" }).click();
+    await page.screenshot({ path: shot(`research-dcf-${suffix}`), fullPage: true });
+
+    await page.getByRole("tab", { name: "Risk" }).click();
+    await page.screenshot({ path: shot(`research-risk-${suffix}`), fullPage: true });
+
+    await page.getByRole("tab", { name: "Macro" }).click();
+    await page.screenshot({ path: shot(`research-macro-${suffix}`), fullPage: true });
+  });
+
   test("captures the banking panel and the transfer dialog", async ({ page }) => {
     const suffix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
     await stubBanking(page);

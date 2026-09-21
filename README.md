@@ -46,6 +46,8 @@ The Progressive Web App uses one reviewed codebase across all platforms, works o
 - Optional live exchange rates that convert foreign-currency bank transfers into the portfolio cash balance
 - Optional live market data: real quotes refresh the market movers, holdings, and order ticket when a provider is configured
 - Read-only Trading 212 brokerage integration showing live cash, positions, and account value
+- Institutional research workspace on a dedicated Research page: stock screener, DCF valuation, earnings intelligence, technical analysis, quantitative pattern research, competitive landscape, dividend analysis, portfolio construction, portfolio risk, macro impact, watchlists, and saved research reports
+- Every research figure is calculated by a deterministic analytics engine and tagged with its provider, source, and as-of timestamp; unavailable metrics are reported as missing instead of being estimated
 - Built-in beginner's guide to investing concepts on a dedicated Learn page
 - Setup page with installation steps for every platform and a first-run account checklist
 - Audit log page to review your recorded account activity and download it as CSV or JSON
@@ -98,6 +100,22 @@ Animated placeholders keep the news panel in place while headlines are being fet
 
 ![News feed showing animated shimmer placeholders while data loads](e2e/screenshots/news-loading-desktop.png)
 ![News feed showing animated shimmer placeholders while data loads on mobile](e2e/screenshots/news-loading-mobile.png)
+
+### Research workspace
+
+The Research page runs the whole research workflow — discover, research, value, analyse, allocate, and monitor — on one shared financial data and analytics foundation.
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Research workspace overview with the company header, dashboard widgets, and research shortcuts](e2e/screenshots/research-overview-desktop.png) | ![Research workspace overview on mobile](e2e/screenshots/research-overview-mobile.png) |
+
+| Stock screener | DCF valuation |
+| --- | --- |
+| ![Stock screener filtering the investable universe on fundamentals and valuation metrics](e2e/screenshots/research-screener-desktop.png) | ![Discounted cash flow model with editable assumptions, a five-year forecast, and sensitivity matrices](e2e/screenshots/research-dcf-desktop.png) |
+
+| Portfolio risk | Macro impact |
+| --- | --- |
+| ![Portfolio risk dashboard with concentration, volatility, value at risk, stress scenarios, and a risk heat map](e2e/screenshots/research-risk-desktop.png) | ![Macro dashboard mapping economic factors to portfolio holdings and scenario impacts](e2e/screenshots/research-macro-desktop.png) |
 
 ### Banking
 
@@ -246,8 +264,9 @@ Packaging must run on the target platform: Windows installers on a Windows machi
 
 | Path | Contents |
 | --- | --- |
-| `index.html`, `banking.html`, `learn.html`, `setup.html`, `audit.html` | Page entry points |
+| `index.html`, `research.html`, `banking.html`, `learn.html`, `setup.html`, `audit.html` | Page entry points |
 | `src/core/` | Framework-free trading, banking, FX, quotes, news, and audit logic shared by client and server |
+| `src/core/research/` | Investment research foundation: reference dataset with provenance, statistics, and the screener, DCF, risk, technicals, earnings, dividend, competition, quant, macro, portfolio, watchlist, report, and orchestration engines |
 | `src/server/` | Server-side services: authentication, MongoDB repositories, and provider integrations |
 | `src/*.js`, `src/styles.css` | Browser controllers and styling for each page |
 | `scripts/server.js` | Node HTTP server that serves the build and the `/api/*` routes |
@@ -267,7 +286,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Unit tests enforce 100% line, branch, and function coverage for trading, banking, persistence, MongoDB repositories, and authentication. Playwright exercises desktop, Android, and iOS experiences and captures screenshots. Each pull request receives a comment linking to its screenshot artifact.
+Unit tests enforce 100% line, branch, and function coverage for trading, banking, persistence, MongoDB repositories, authentication, and every research analytics engine. Playwright exercises desktop, Android, and iOS experiences and captures screenshots. Each pull request receives a comment linking to its screenshot artifact.
 
 ## Deployment
 
