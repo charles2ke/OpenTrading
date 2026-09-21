@@ -1,5 +1,5 @@
-const CACHE = "opentrading-v2";
-const ASSETS = ["./", "./index.html", "./learn.html", "./setup.html", "./banking.html", "./audit.html", "./assets/icon.svg", "./manifest.webmanifest"];
+const CACHE = "opentrading-v3";
+const ASSETS = ["./", "./index.html", "./learn.html", "./research.html", "./setup.html", "./banking.html", "./audit.html", "./assets/icon.svg", "./manifest.webmanifest"];
 
 function isPrivatePath(pathname) {
   return /(^|\/)(api|auth)\//.test(pathname);
