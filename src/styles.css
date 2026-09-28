@@ -146,7 +146,8 @@ input, select { width: 100%; min-height: 43px; padding: 0 12px; border: 1px soli
   .market-status { display: none; }.search-wrap { width: auto; flex: 1; }.content { padding: 25px 16px 48px; }
   .welcome { align-items: start; gap: 20px; }.welcome .primary-button { white-space: nowrap; }
   .metrics { grid-template-columns: 1fr; }.indices { grid-template-columns: 1fr; }.index-card { padding: 12px 0; border-right: 0; border-bottom: 1px solid var(--border); }
-  th:nth-child(2), td:nth-child(2) { display: none; }
+  .panel:not(.audit-panel) th:nth-child(2), .panel:not(.audit-panel) td:nth-child(2) { display: none; }
+  .audit-panel th:nth-child(4), .audit-panel td:nth-child(4) { display: none; }
 }
 @media (max-width: 430px) { .welcome { display: block; }.welcome .primary-button { width: 100%; margin-top: 20px; }.avatar { display: none; }.form-row { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
