@@ -24,7 +24,10 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply safe dependency fixes
-        run: npm audit fix --package-lock-only
+        # `npm audit fix` exits non-zero when advisories remain that only
+        # `--force` could resolve. Those leftovers are gated by the
+        # "Verify dependency audit" step below, so they must not fail here.
+        run: npm audit fix --package-lock-only || true
       - run: npm ci
       - name: Verify dependency audit
         run: npm audit --audit-level=high
